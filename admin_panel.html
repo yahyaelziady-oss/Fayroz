@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم العليا للمنصة - SaaS Admin Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        :root {
+            --bg-main: #0f172a; --bg-card: #1e293b; --primary: #3b82f6; --primary-hover: #2563eb;
+            --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --purple: #8b5cf6;
+            --info: #0ea5e9; --text-light: #f8fafc; --text-muted: #94a3b8; --border: #334155;
+        }
+
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; margin: 0; padding: 0; }
+        body { background-color: var(--bg-main); color: var(--text-light); padding: 15px; min-height: 100vh; position: relative;}
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        div:where(.swal2-container) { z-index: 4000 !important; }
+        div:where(.swal2-container) div:where(.swal2-popup) { background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;}
+        div:where(.swal2-container) h2:where(.swal2-title) { color: #ffffff !important; font-weight: 900 !important; }
+        div:where(.swal2-container) div:where(.swal2-html-container) { color: #ffffff !important; font-size: 15px !important; font-weight: 600 !important; line-height: 1.6; }
+        .swal2-input, .swal2-textarea { font-family: 'Cairo', sans-serif !important; text-align: right !important; color: #ffffff !important; background: var(--bg-main) !important; border: 1px solid var(--border) !important; outline: none !important;}
+        .swal2-textarea:focus { border-color: var(--primary) !important; box-shadow: 0 0 10px rgba(59,130,246,0.3) !important;}
+        .swal2-label { color: #f8fafc !important; font-weight: bold !important; margin-bottom: 8px;}
+
+        .admin-header {
+            background: linear-gradient(135deg, var(--bg-card), #1e1b4b); border: 1px solid var(--border); border-radius: 12px; padding: 20px 15px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; margin-bottom: 20px; box-shadow: 0 6px 15px -5px rgba(0, 0, 0, 0.3); text-align: center; position: relative;
+        }
+        
+        .btn-logout-corner {
+            position: absolute; top: 15px; left: 15px; background: transparent; border: 1px solid var(--danger); color: #fca5a5;
+            width: 35px; height: 35px; border-radius: 8px; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.3s;
+        }
+        .btn-logout-corner:hover { background: var(--danger); color: white; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); transform: scale(1.05); }
+
+        /* ستايل حالة الاتصال */
+        .status-badge {
+            position: absolute; top: 15px; right: 15px; padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; display: flex; align-items: center; gap: 6px; transition: 0.3s; z-index: 10;
+        }
+        .status-online { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid var(--success); box-shadow: 0 0 10px rgba(16, 185, 129, 0.2); }
+        .status-offline { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid var(--danger); box-shadow: 0 0 10px rgba(239, 68, 68, 0.2); }
+
+        .admin-profile { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 15px; }
+        .admin-avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); background-color: #0f172a; }
+        .admin-meta h1 { font-size: 20px; font-weight: 900; background: linear-gradient(to left, #fff, #93c5fd); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0; }
+        .admin-meta p { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; margin-top: 5px; }
+        
+        .header-actions { display: grid; grid-template-columns: 1fr; gap: 10px; width: 100%; max-width: 350px; margin-top: 15px; }
+        @media (min-width: 768px) { .header-actions { grid-template-columns: repeat(3, 1fr); max-width: 600px; } }
+
+        .btn-header { width: 100%; padding: 10px 12px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; color: white; margin: 0; }
+        .btn-header:active { transform: scale(0.97); }
+        .btn-tickets { background: linear-gradient(135deg, #f59e0b, #d97706); position: relative; }
+        .ticket-badge { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; display: flex; justify-content: center; align-items: center; border: 2px solid var(--bg-card); animation: pulse 2s infinite;}
+        .btn-super-backup { background: linear-gradient(135deg, #10b981, #059669); }
+        .btn-super-restore { background: linear-gradient(135deg, var(--purple), #6d28d9); }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .stat-card i { font-size: 20px; margin-bottom: 6px; color: var(--primary); }
+        .stat-card h3 { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 2px; }
+        .stat-card .val { font-size: 20px; font-weight: 900; color: #fff; }
+
+        .quick-actions { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; background: var(--bg-card); padding: 12px; border-radius: 12px; border: 1px solid var(--border); }
+        .qa-btn { flex: 1; min-width: 130px; background: var(--bg-main); border: 1px solid var(--border); color: #e2e8f0; padding: 10px 15px; border-radius: 8px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+        .qa-btn:hover { border-color: var(--primary); color: #fff; background: rgba(59, 130, 246, 0.1); transform: translateY(-2px); }
+        .qa-btn.qa-add i { color: var(--primary); }
+        .qa-btn.qa-set i { color: var(--success); }
+        .qa-btn.qa-ann i { color: var(--warning); }
+
+        .form-group { margin-bottom: 12px; text-align: right; }
+        .form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; font-weight: 700; }
+        .form-group input, .form-group textarea { width: 100%; padding: 8px 12px; background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; color: var(--text-light); font-size: 13px; outline: none; transition: 0.3s; }
+        .form-group textarea { resize: vertical; min-height: 70px; }
+        .form-group input:focus, .form-group textarea:focus { border-color: var(--primary); }
+
+        .file-upload-wrapper { display: flex; align-items: center; gap: 10px; }
+        .file-upload-wrapper input[type="file"] { display: none; }
+        .btn-upload { background-color: #475569; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 12px; display: flex; align-items: center; gap: 6px; width: 100%; justify-content: center; }
+
+        .btn { width: 100%; padding: 10px; border: none; border-radius: 6px; font-size: 13px; font-weight: 800; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 10px; transition: 0.2s;}
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-purple { background-color: var(--purple); color: white; }
+        .btn-outline-danger { background-color: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); color: #fca5a5; margin-top: 10px; }
+        .btn-outline-danger:hover { background-color: var(--danger); color: white; }
+        
+        .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+        .search-wrapper { position: relative; flex: 1; min-width: 200px; }
+        .search-wrapper i { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px;}
+        .search-input { width: 100%; padding: 8px 35px 8px 12px; background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; color: white; font-size: 12px; outline: none; }
+
+        .table-wrapper { width: 100%; overflow-x: auto; border-radius: 10px; background: var(--bg-main); border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; text-align: right; }
+        th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+        th { background-color: rgba(59, 130, 246, 0.08); color: #93c5fd; font-weight: 800; font-size: 12px;}
+        
+        .btn-action-main { background: linear-gradient(135deg, var(--purple), #6d28d9); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; font-size: 11px;}
+        .btn-action-main:active { transform: scale(0.95); }
+        .expired-text { color: var(--danger) !important; font-weight: 900 !important; }
+
+        .sys-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); opacity: 0; transition: 0.3s; }
+        .sys-modal-overlay.show { display: flex; opacity: 1; }
+        .sys-modal-box { background: var(--bg-card); width: 95%; max-width: 450px; border-radius: 16px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transform: translateY(20px); transition: 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-height: 90vh;}
+        .sys-modal-overlay.show .sys-modal-box { transform: translateY(0); }
+        .sm-header { padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); }
+        .sm-header h2 { margin: 0; font-size: 14px; font-weight: 900; color: #fff; display: flex; align-items: center; gap: 8px;}
+        .sm-close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; transition: 0.2s; }
+        .sm-close-btn:hover { color: var(--danger); }
+        .sm-body { padding: 15px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 5px; background: var(--bg-main); }
+        
+        #ticketsModal .sys-modal-box { max-width: 600px; height: 85vh; }
+
+        .ticket-card { background: var(--bg-card); border: 1px solid var(--border); border-right: 3px solid var(--warning); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; transition: 0.3s; margin-bottom:10px;}
+        .ticket-card.replied { border-right-color: var(--success); opacity: 0.85; }
+        .ticket-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 6px;}
+        .ticket-center-info h4 { margin: 0; font-size: 13px; color: #fff; font-weight: 800; display: flex; align-items: center; gap: 4px; }
+        .ticket-center-info p { margin: 2px 0 0 0; font-size: 10px; color: var(--text-muted); font-family: monospace;}
+        .ticket-date { font-size: 9px; color: var(--text-muted); font-weight: bold;}
+        .ticket-msg { font-size: 12px; color: #e2e8f0; line-height: 1.5; font-weight: 600; margin-bottom: 10px; white-space: pre-wrap; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px;}
+        .ticket-reply-box { background: rgba(16, 185, 129, 0.1); border: 1px dashed var(--success); border-radius: 6px; padding: 8px; margin-bottom: 10px;}
+        .ticket-reply-box strong { color: var(--success); font-size: 10px; display: block; margin-bottom: 4px;}
+        .ticket-reply-box p { margin: 0; font-size: 11px; color: #fff; white-space: pre-wrap;}
+        .ticket-actions { display: flex; gap: 6px; justify-content: flex-end;}
+        .btn-reply, .btn-del-ticket { border-radius: 4px; font-weight: 800; font-size: 10px; cursor: pointer; transition: 0.2s; padding: 5px 10px;}
+        .btn-reply { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid var(--primary); }
+        .btn-reply:hover { background: var(--primary); color: white;}
+        .btn-del-ticket { background: transparent; color: var(--danger); border: 1px solid transparent; padding: 5px; }
+        .btn-del-ticket:hover { background: rgba(239, 68, 68, 0.15); border-color: var(--danger);}
+
+        /* Control Panel Grid */
+        .cp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; text-align: center; }
+        .cp-btn { background: #0f141e; border: 1px solid #334155; color: #f8fafc; padding: 8px 5px; border-radius: 6px; font-weight: 800; font-size: 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: 0.2s; height: 100%;}
+        .cp-btn i { font-size: 14px; }
+        .cp-btn:hover { background: #1e293b; border-color: var(--primary); transform: translateY(-2px); }
+        .cp-btn.warning:hover { border-color: var(--warning); color: var(--warning); }
+        .cp-btn.success:hover { border-color: var(--success); color: var(--success); }
+        .cp-btn.primary:hover { border-color: var(--primary); color: var(--primary); }
+        .cp-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+        .cp-btn.purple { border-color: transparent; }
+        .cp-btn.purple:hover { border-color: var(--purple); color: var(--purple); }
+        .cp-btn.active-danger { background: rgba(239, 68, 68, 0.15); border-color: var(--danger); color: #fca5a5; }
+        .cp-btn.active-danger:hover { background: var(--danger); color: #fff; }
+        .cp-btn.active-warning { background: rgba(245, 158, 11, 0.15); border-color: var(--warning); color: #fcd34d; }
+        .cp-btn.active-warning:hover { background: var(--warning); color: #fff; }
+        .cp-btn.active-info { background: rgba(59, 130, 246, 0.15); border-color: var(--primary); color: #93c5fd; }
+        .cp-btn.disabled-btn { opacity: 0.5; pointer-events: none; }
+        .cp-btn.outline-red { border-color: var(--danger); color: #fca5a5; }
+        .cp-btn.outline-red:hover { background: var(--danger); color: white; }
+        .cp-btn.solid-red { background: var(--danger); border-color: var(--danger); color: white; }
+        .cp-btn.solid-red:hover { background: #b91c1c; border-color: #b91c1c; }
+
+        @media (max-width: 900px) {
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { display: none; }
+            tr { background-color: var(--bg-card); margin: 8px 0; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
+            td { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+            td:last-child { border-bottom: none; background-color: rgba(0,0,0,0.2); justify-content: center; padding: 10px; }
+            td::before { content: attr(data-label); font-weight: 800; color: var(--text-muted); font-size: 11px; }
+        }
+        
+        .perm-check-wrap { display: flex; align-items: center; gap: 8px; color: var(--text-muted); margin-bottom: 8px; font-size: 12px; cursor: pointer; }
+        .perm-check-wrap input { cursor: pointer; width: 14px; height: 14px; accent-color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header class="admin-header">
+            <div id="networkStatus" class="status-badge status-online">
+                <i class="fa-solid fa-wifi"></i> متصل بالخوادم
+            </div>
+
+            <button class="btn-logout-corner" onclick="logoutAdmin()" title="تسجيل الخروج"><i class="fa-solid fa-power-off"></i></button>
+            <div class="admin-profile">
+                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" id="adminPhoto" class="admin-avatar" alt="بروفايل">
+                <div class="admin-meta">
+                    <h1 id="adminName">كيميائي / يحيى علي الزيادي</h1>
+                    <p><i class="fa-solid fa-phone"></i> <span id="adminPhone">جاري التحميل...</span></p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn-header btn-tickets" onclick="openSystemModal('ticketsModal')">
+                    <i class="fa-solid fa-envelope-open-text"></i> صندوق الرسائل
+                    <span class="ticket-badge" id="pendingTicketsBadge" style="display:none;">0</span>
+                </button>
+                <button class="btn-header btn-super-backup" onclick="superGlobalBackup()"><i class="fa-solid fa-database"></i> سحب نسخة للمنصة</button>
+                <button class="btn-header btn-super-restore" onclick="triggerGlobalRestore()"><i class="fa-solid fa-cloud-arrow-up"></i> استرداد نسخة</button>
+            </div>
+            <input type="file" id="globalRestoreInput" accept="application/json" style="display:none;" onchange="handleGlobalRestore(event)">
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card" style="border-bottom: 3px solid var(--primary);"><i class="fa-solid fa-building"></i><h3>السناتر</h3><span class="val" id="statTotal">0</span></div>
+            <div class="stat-card" style="border-bottom: 3px solid var(--success);"><i class="fa-solid fa-circle-check"></i><h3>نشط</h3><span class="val" id="statActive">0</span></div>
+            <div class="stat-card" style="border-bottom: 3px solid var(--danger);"><i class="fa-solid fa-circle-xmark"></i><h3>معلق</h3><span class="val" id="statSuspended">0</span></div>
+        </div>
+
+        <div class="quick-actions">
+            <button class="qa-btn qa-add" onclick="openSystemModal('modal-addCenter')"><i class="fa-solid fa-circle-plus"></i> تفعيل سنتر جديد</button>
+            <button class="qa-btn qa-set" onclick="openSystemModal('modal-adminSettings')"><i class="fa-solid fa-user-gear"></i> إعدادات الأدمن</button>
+            <button class="qa-btn qa-ann" onclick="openSystemModal('modal-announcement')"><i class="fa-solid fa-bullhorn"></i> ميكروفون الإدارة</button>
+        </div>
+
+        <div class="card wide-card" style="padding: 0; overflow: hidden; border: none; background: transparent;">
+            <div style="padding: 12px 15px; background: var(--bg-card); border-radius: 10px 10px 0 0; border: 1px solid var(--border); border-bottom: none;">
+                <h2 style="font-size: 14px; font-weight: 900; display: flex; align-items: center; gap: 8px; color: #f1f5f9; margin: 0;"><i class="fa-solid fa-list-check" style="color: var(--primary);"></i> إدارة حسابات السناتر</h2>
+            </div>
+            <div style="background: var(--bg-card); padding: 0 15px 12px 15px; border-left: 1px solid var(--border); border-right: 1px solid var(--border);">
+                <div class="toolbar">
+                    <div class="search-wrapper">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="searchCenterInput" class="search-input" oninput="filterCentersLocal()" placeholder="بحث بالاسم أو الكود...">
+                    </div>
+                </div>
+            </div>
+            <div class="table-wrapper" style="border-radius: 0 0 10px 10px; border-top: none;">
+                <table>
+                    <thead><tr><th>اسم السنتر</th><th>كود المعرف (ID)</th><th>كلمة المرور</th><th>تاريخ الانتهاء</th><th>الحالة</th><th style="text-align: center;">التحكم</th></tr></thead>
+                    <tbody id="centersTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="sys-modal-overlay" id="modal-addCenter">
+        <div class="sys-modal-box">
+            <div class="sm-header">
+                <h2><i class="fa-solid fa-circle-plus" style="color: var(--primary);"></i> تفعيل سنتر جديد</h2>
+                <button class="sm-close-btn" onclick="closeSystemModal('modal-addCenter')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="sm-body">
+                <div class="form-group"><label>اسم السنتر / المركز</label><input type="text" id="newCenterName" placeholder="مثال: سنتر الفيروز"></div>
+                <div class="form-group"><label>كود السنتر (ID)</label><input type="text" id="newCenterId" placeholder="مثال: center_01"></div>
+                <div class="form-group"><label>كلمة المرور المبدئية</label><input type="text" id="newCenterPass"></div>
+                <div class="form-group"><label>تاريخ انتهاء الاشتراك</label><input type="date" id="newCenterExpiry"></div>
+                <button class="btn btn-primary" onclick="createNewCenter()"><i class="fa-solid fa-bolt"></i> تفعيل السنتر فوراً</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="sys-modal-overlay" id="modal-adminSettings">
+        <div class="sys-modal-box">
+            <div class="sm-header">
+                <h2><i class="fa-solid fa-user-gear" style="color: var(--success);"></i> إعدادات الأدمـن</h2>
+                <button class="sm-close-btn" onclick="closeSystemModal('modal-adminSettings')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="sm-body">
+                <div class="form-group"><label>الاسم واللقب</label><input type="text" id="settingAdminName"></div>
+                <div class="form-group"><label>رقم الهاتف</label><input type="text" id="settingAdminPhone"></div>
+                <div class="form-group">
+                    <label>تغيير الصورة الشخصية</label>
+                    <div class="file-upload-wrapper">
+                        <input type="file" id="imageInput" accept="image/*" onchange="previewAndCompressImage(event)">
+                        <button class="btn-upload" onclick="document.getElementById('imageInput').click()"><i class="fa-solid fa-image"></i> استعراض الصورة</button>
+                    </div>
+                    <div id="imagePreviewContainer" style="display: none; text-align: center; margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                        <img id="adminImagePreview" src="" alt="معاينة الصورة" style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--primary); object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                        <p style="font-size: 11px; color: var(--success); font-weight: bold; margin-top: 8px;">تم تجهيز الصورة للحفظ بأمان.</p>
+                    </div>
+                    <input type="hidden" id="settingAdminPhoto">
+                </div>
+                <button class="btn btn-success" onclick="updateAdminProfile()"><i class="fa-solid fa-floppy-disk"></i> حفظ الهيدر</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="sys-modal-overlay" id="modal-announcement">
+        <div class="sys-modal-box">
+            <div class="sm-header">
+                <h2><i class="fa-solid fa-bullhorn" style="color: var(--warning);"></i> ميكروفون الإدارة</h2>
+                <button class="sm-close-btn" onclick="closeSystemModal('modal-announcement')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="sm-body">
+                <div class="form-group">
+                    <label>نص الإشعار لجميع السناتر</label>
+                    <textarea id="announcementMsg" placeholder="اكتب رسالتك لجميع السناتر هنا وستظهر في شاشاتهم كشريط أخبار..."></textarea>
+                </div>
+                <button class="btn btn-purple" onclick="sendGlobalAnnouncement()"><i class="fa-solid fa-paper-plane"></i> إرسال الإشعار فوراً</button>
+                <button class="btn btn-outline-danger" onclick="deleteGlobalAnnouncement()"><i class="fa-solid fa-bell-slash"></i> إيقاف الإشعار العام</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="sys-modal-overlay" id="ticketsModal">
+        <div class="sys-modal-box">
+            <div class="sm-header">
+                <h2><i class="fa-solid fa-inbox" style="color: var(--info);"></i> صندوق رسائل السناتر</h2>
+                <button class="sm-close-btn" onclick="closeSystemModal('ticketsModal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="sm-body" id="ticketsContainer"><div style="text-align:center; color:gray; font-size: 12px; font-weight:bold; margin-top:20px;">جاري تحميل الرسائل...</div></div>
+        </div>
+    </div>
+
+    <input type="file" id="singleRestoreInput" accept="application/json" style="display:none;" onchange="handleSingleRestore(event)">
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, getDoc, getDocs, deleteField } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword, signOut, signInWithEmailAndPassword, updatePassword } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyCPFOwLEjtPWl89wZTbAqQoNVUmIVTkzEI", authDomain: "smart-center-saas-53d3e.firebaseapp.com", projectId: "smart-center-saas-53d3e", storageBucket: "smart-center-saas-53d3e.firebasestorage.app", messagingSenderId: "59706619521", appId: "1:59706619521:web:aba7722ddf2073fceebf80" };
+        
+        const app = initializeApp(firebaseConfig); 
+        const db = getFirestore(app);
+
+        const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
+        const secondaryAuth = getAuth(secondaryApp);
+
+        window.allCentersData = [];
+        const todayStr = new Date().toISOString().split('T')[0];
+        document.getElementById("newCenterExpiry").value = todayStr;
+
+        window.openSystemModal = function(id) { document.getElementById(id).classList.add('show'); }
+        window.closeSystemModal = function(id) { document.getElementById(id).classList.remove('show'); }
+
+        // ================= مراقبة حالة الاتصال بالإنترنت =================
+        function updateNetworkStatus() {
+            const badge = document.getElementById('networkStatus');
+            if(navigator.onLine) {
+                badge.className = 'status-badge status-online';
+                badge.innerHTML = '<i class="fa-solid fa-wifi"></i> متصل بالخوادم';
+            } else {
+                badge.className = 'status-badge status-offline';
+                badge.innerHTML = '<i class="fa-solid fa-wifi-slash"></i> وضع الأوفلاين (كاش)';
+            }
+        }
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+        updateNetworkStatus(); // استدعاء فوري عند الفتح
+
+        // ================= التحميل الفوري (الكاش) =================
+        function renderCentersTable(centersArray) {
+            const tableBody = document.getElementById("centersTableBody");
+            tableBody.innerHTML = ""; 
+            let activeCount = 0; let suspendedCount = 0;
+            const currentDay = new Date().toISOString().split('T')[0];
+
+            centersArray.forEach((data) => {
+                const isExpired = data.expiry < currentDay;
+                const isActive = (data.is_active !== false) && !isExpired; 
+                if(isActive) activeCount++; else suspendedCount++;
+                
+                const statusText = isActive ? 'نشط 🟢' : (isExpired ? 'منتهي ⏰' : 'مُعلق 🔴');
+                const statusColor = isActive ? 'var(--success)' : 'var(--danger)';
+                
+                let maintBadge = data.maintenance_mode ? ' <span style="font-size:10px; background:var(--warning); color:#fff; padding:3px 6px; border-radius:4px; margin-right:5px;"><i class="fa-solid fa-person-digging"></i> صيانة</span>' : '';
+                let deviceBadge = data.device_id ? ' <span style="font-size:10px; background:var(--primary); color:#fff; padding:3px 6px; border-radius:4px; margin-right:5px;" title="مربوط بجهاز حصري"><i class="fa-solid fa-mobile-screen"></i> مربوط</span>' : '';
+                
+                const finalStatusHtml = `<span style="color: ${statusColor}; font-weight: bold;">${statusText}</span>` + maintBadge + deviceBadge;
+
+                tableBody.innerHTML += `<tr>
+                        <td data-label="اسم السنتر :" style="font-weight: 800;">${data.name}</td>
+                        <td data-label="المُعرّف (ID) :"><code>${data.id}</code></td>
+                        <td data-label="كلمة المرور :" style="font-weight: 900; color: var(--warning);">${data.pass}</td>
+                        <td data-label="تاريخ الانتهاء :" class="${isExpired ? 'expired-text' : ''}">${data.expiry}</td>
+                        <td data-label="حالة الحساب :">${finalStatusHtml}</td>
+                        <td class="actions-cell" style="text-align: center;">
+                            <button class="btn-action-main" onclick="openCenterPanel('${data.id}')"><i class="fa-solid fa-gear"></i> إدارة السنتر</button>
+                        </td>
+                    </tr>`;
+            });
+            document.getElementById("statTotal").innerText = centersArray.length; 
+            document.getElementById("statActive").innerText = activeCount; 
+            document.getElementById("statSuspended").innerText = suspendedCount;
+        }
+
+        // سحب البيانات من الكاش فوراً قبل حتى ما الفايربيز يحمل
+        const cachedCenters = localStorage.getItem("adminCentersCache");
+        if(cachedCenters) {
+            try {
+                window.allCentersData = JSON.parse(cachedCenters);
+                renderCentersTable(window.allCentersData);
+            } catch(e) {}
+        }
+
+        onSnapshot(collection(db, "centers_auth"), (snapshot) => {
+            let newData = [];
+            snapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                newData.push({
+                    name: data.center_name, 
+                    id: docSnap.id, 
+                    pass: data.password, 
+                    expiry: data.expiry_date || '2099-12-31', 
+                    is_active: data.is_active, 
+                    private_alert: data.private_alert, 
+                    maintenance_mode: data.maintenance_mode,
+                    device_id: data.device_id
+                });
+            });
+            window.allCentersData = newData;
+            localStorage.setItem("adminCentersCache", JSON.stringify(newData)); // تحديث الكاش
+            renderCentersTable(window.allCentersData); 
+        });
+
+        // ================= التذاكر =================
+        onSnapshot(collection(db, "support_tickets"), (snap) => {
+            let pendingCount = 0; const container = document.getElementById('ticketsContainer'); const badge = document.getElementById('pendingTicketsBadge');
+            let tickets = []; snap.forEach(d => tickets.push({id: d.id, ...d.data()})); tickets.sort((a, b) => new Date(b.date) - new Date(a.date));
+            if(tickets.length === 0) { container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px; font-weight:bold; font-size:12px;">لا توجد رسائل حالياً.</div>'; badge.style.display = 'none'; return; }
+            container.innerHTML = '';
+            tickets.forEach(t => {
+                let isPending = t.status === 'pending'; if(isPending) pendingCount++;
+                let dateFormatted = new Date(t.date).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' });
+                let replyHtml = ''; if(!isPending && t.reply) replyHtml = `<div class="ticket-reply-box"><strong><i class="fa-solid fa-reply-all"></i> رد الإدارة:</strong><p>${t.reply}</p></div>`;
+                container.innerHTML += `
+                    <div class="ticket-card ${isPending ? '' : 'replied'}">
+                        <div class="ticket-header"><div class="ticket-center-info"><h4><i class="fa-solid ${isPending ? 'fa-circle-dot fa-beat' : 'fa-check-circle'}" style="color:${isPending ? 'var(--warning)' : 'var(--success)'}; font-size:12px;"></i> ${t.teacherName || 'سنتر'}</h4><p>ID: ${t.centerId}</p></div><span class="ticket-date">${dateFormatted}</span></div>
+                        <div class="ticket-msg">${t.message}</div>${replyHtml}
+                        <div class="ticket-actions">${isPending ? `<button class="btn-reply" onclick="replyToTicket('${t.id}', '${t.teacherName}')"><i class="fa-solid fa-paper-plane"></i> إرسال رد</button>` : ''}<button class="btn-del-ticket" onclick="deleteTicket('${t.id}')"><i class="fa-solid fa-trash-can"></i></button></div>
+                    </div>`;
+            });
+            if(pendingCount > 0) { badge.style.display = 'flex'; badge.innerText = pendingCount; } else { badge.style.display = 'none'; }
+        });
+
+        window.replyToTicket = async function(ticketId, teacherName) { const { value: replyText } = await Swal.fire({ title: `رد على: ${teacherName}`, input: 'textarea', inputPlaceholder: 'اكتب رد الإدارة هنا...', showCancelButton: true, confirmButtonText: 'إرسال الرد', cancelButtonText: 'إلغاء', confirmButtonColor: '#10b981', inputValidator: (val) => { if (!val) return 'يجب كتابة رد!'; }}); if(replyText) { Swal.fire({title: 'جاري الإرسال...', didOpen: () => Swal.showLoading()}); await updateDoc(doc(db, "support_tickets", ticketId), { status: 'replied', reply: replyText, replyDate: new Date().toISOString() }); Swal.fire({toast:true, position:'top', icon:'success', title:'تم إرسال الرد بنجاح!', showConfirmButton:false, timer:2000}); } }
+        window.deleteTicket = function(ticketId) { Swal.fire({ title: 'حذف التذكرة؟', text: 'هل أنت متأكد من الحذف؟', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'احذف', cancelButtonText: 'إلغاء' }).then((res) => { if(res.isConfirmed) deleteDoc(doc(db, "support_tickets", ticketId)); }); }
+
+        window.openCenterPanel = function(id) {
+            const centerData = window.allCentersData.find(c => c.id === id); if(!centerData) return;
+            let name = centerData.name; let pass = centerData.pass; let exp = centerData.expiry; 
+            let isActive = centerData.is_active; 
+            let isMaintenance = centerData.maintenance_mode || false;
+            let hasDeviceLock = !!centerData.device_id;
+            
+            let freezeBtnClass = isActive ? 'danger' : 'active-danger'; 
+            let freezeIcon = isActive ? 'fa-lock' : 'fa-lock-open'; 
+            let freezeText = isActive ? 'منع الدخول للسنتر' : 'السماح بالدخول';
+            
+            let maintClass = isMaintenance ? 'active-warning' : 'warning';
+            let maintIcon = isMaintenance ? 'fa-person-digging' : 'fa-screwdriver-wrench';
+            let maintText = isMaintenance ? 'إيقاف وضع الصيانة' : 'تفعيل وضع الصيانة';
+
+            let alertObj = centerData.private_alert || null; let hasAlert = !!alertObj;
+            let billingClass = (alertObj && alertObj.type === 'danger') ? 'active-danger' : 'warning'; 
+            let msgClass = (alertObj && alertObj.type === 'info') ? 'active-info' : 'primary'; 
+            let clearClass = hasAlert ? 'success' : 'disabled-btn';
+
+            let deviceLockBtn = hasDeviceLock ? `<button class="cp-btn success" onclick="resetDeviceLock('${id}')" style="grid-column: 1 / -1;"><i class="fa-solid fa-mobile-screen-button"></i> فك ارتباط الجهاز (مربوط حالياً)</button>` : '';
+
+            Swal.fire({
+                title: `<span style="color:var(--primary); font-size:16px;">⚙️ التحكم في: ${name}</span>`,
+                html: `
+                    <p style="font-size:11px; color:gray; margin-top:-10px; margin-bottom:15px; font-family:monospace;">ID: ${id}</p>
+                    <div class="cp-grid">
+                        ${deviceLockBtn}
+                        
+                        <button class="cp-btn success" onclick="extendSubscription('${id}', '${exp}', 30)"><i class="fa-solid fa-calendar-plus"></i> تمديد شهر</button>
+                        <button class="cp-btn primary" onclick="extendSubscription('${id}', '${exp}', 15)"><i class="fa-solid fa-calendar-plus"></i> تمديد 15 يوم</button>
+                        
+                        <button class="cp-btn primary" onclick="impersonateCenter('${id}', '${name}')"><i class="fa-solid fa-eye"></i> دخول للسنتر</button>
+                        <button class="cp-btn success" onclick="xrayCenter('${id}')"><i class="fa-solid fa-bolt"></i> نظرة خاطفة</button>
+                        
+                        <button class="cp-btn purple" style="grid-column: 1 / -1;" onclick="manageSupervisors('${id}', '${name}')"><i class="fa-solid fa-users-gear"></i> إدارة مشرفين السنتر</button>
+                        
+                        <button class="cp-btn ${maintClass}" onclick="toggleMaintenanceMode('${id}', ${isMaintenance})"><i class="fa-solid ${maintIcon}"></i> ${maintText}</button>
+                        <button class="cp-btn purple" onclick="forceLogoutCenter('${id}')"><i class="fa-solid fa-person-walking-arrow-right"></i> طرد قسري</button>
+                        
+                        <button class="cp-btn ${msgClass}" onclick="sendPrivateMessage('${id}', '${name}')"><i class="fa-solid fa-envelope"></i> رسالة خاصة</button>
+                        <button class="cp-btn ${billingClass}" onclick="sendBillingAlert('${id}', '${name}')"><i class="fa-solid fa-file-invoice-dollar"></i> إنذار دفع</button>
+                        
+                        <button class="cp-btn ${clearClass}" onclick="clearCenterAlert('${id}')" title="يمسح الإنذار"><i class="fa-solid fa-bell-slash"></i> إخفاء التنبيهات</button>
+                        <button class="cp-btn ${freezeBtnClass}" onclick="toggleSuspendPrompt('${id}', ${isActive})"><i class="fa-solid ${freezeIcon}"></i> ${freezeText}</button>
+                        
+                        <button class="cp-btn primary" onclick="exportSingleCenter('${id}', '${name}')"><i class="fa-solid fa-download"></i> تصدير بيانات</button>
+                        <button class="cp-btn warning" onclick="triggerCenterRestore('${id}')"><i class="fa-solid fa-upload"></i> استرداد للسنتر</button>
+                        
+                        <button class="cp-btn" onclick="copyCenterData('${name}', '${id}', '${pass}', '${exp}')"><i class="fa-solid fa-copy"></i> نسخ الكود</button>
+                        <button class="cp-btn" onclick="editCenterFull('${id}', '${name}', '${pass}', '${exp}')"><i class="fa-solid fa-pen-to-square"></i> تعديل بيانات</button>
+                        
+                        <button class="cp-btn outline-red" onclick="resetCenterData('${id}', '${name}')" style="grid-column: 1 / -1;"><i class="fa-solid fa-broom"></i> تصفير بيانات السنتر (عام جديد)</button>
+                        
+                        <button class="cp-btn solid-red" onclick="deleteCenter('${id}', '${name}')" style="grid-column: 1 / -1; margin-top: 5px;"><i class="fa-solid fa-trash-can"></i> حذف السنتر بالكامل (نهائياً)</button>
+                    </div>
+                `,
+                showConfirmButton: false, showCloseButton: true, width: '400px'
+            });
+        }
+
+        window.resetDeviceLock = async function(id) {
+            Swal.fire({
+                title: 'فك ارتباط الجهاز؟', text: 'سيتم مسح قفل الجهاز الحالي.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#10b981', confirmButtonText: 'نعم، فك الارتباط', cancelButtonText: 'إلغاء'
+            }).then(async (res) => {
+                if (res.isConfirmed) {
+                    await updateDoc(doc(db, "centers_auth", id), { device_id: deleteField() });
+                    Swal.fire({toast:true, position:'top', icon:'success', title:'تم فك ارتباط الجهاز!', showConfirmButton:false, timer:2000});
+                }
+            });
+        }
+
+        window.extendSubscription = async function(id, currentExp, days) {
+            let baseDate = new Date();
+            if (currentExp && new Date(currentExp) > baseDate) { baseDate = new Date(currentExp); }
+            baseDate.setDate(baseDate.getDate() + days);
+            let newExp = baseDate.toISOString().split('T')[0];
+            Swal.fire({ title: 'تأكيد التمديد', text: `سيتم التمديد ${days} يوم. (ينتهي في: ${newExp})`, icon: 'question', showCancelButton: true, confirmButtonColor: '#10b981', confirmButtonText: 'نعم، تمديد', cancelButtonText: 'إلغاء' }).then(async (res) => { if (res.isConfirmed) { Swal.fire({title: 'جاري التمديد...', didOpen: ()=>Swal.showLoading()}); await updateDoc(doc(db, "centers_auth", id), { expiry_date: newExp }); Swal.fire({toast:true, position:'top', icon:'success', title:'تم التمديد بنجاح', showConfirmButton:false, timer:2000}); } });
+        }
+
+        window.toggleMaintenanceMode = async function(id, isMaintenance) { let newStatus = !isMaintenance; let msg = newStatus ? 'تم تفعيل وضع الصيانة للسنتر.' : 'تم استئناف العمل بالسنتر (إلغاء الصيانة).'; try { await updateDoc(doc(db, "centers_auth", id), { maintenance_mode: newStatus }); Swal.fire({toast:true, position:'top', icon:'success', title:msg, showConfirmButton:false, timer:2500}); } catch(e) { Swal.fire('خطأ', 'حدث خطأ', 'error'); } }
+        window.forceLogoutCenter = async function(id) { Swal.fire({ title: 'طرد إجباري؟', text: 'سيتم إخراج كل الأجهزة المفتوحة حالياً من هذا السنتر فوراً.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#8b5cf6', confirmButtonText: 'نعم، اطرد الجميع', cancelButtonText: 'تراجع' }).then(async (res) => { if (res.isConfirmed) { await updateDoc(doc(db, "centers_auth", id), { force_logout: Date.now() }); Swal.fire({toast:true, position:'top', icon:'success', title:'تم إرسال أمر الطرد بنجاح!', showConfirmButton:false, timer:2000}); } }); }
+
+        // ====== دالة تصفير السنتر لعام جديد ======
+        window.resetCenterData = async function(id, name) { 
+            Swal.fire({ 
+                title: 'تصفير بيانات السنتر!', 
+                text: `تحذير: سيتم مسح (الطلاب، المجموعات، المشرفين، الدرجات، السلوك، والمصروفات) الخاصة بـ ${name} لبدء عام جديد. حساب الدخول الأساسي سيبقى كما هو ولن يُمحى.`, 
+                icon: 'warning', 
+                showCancelButton: true, 
+                confirmButtonColor: '#ef4444', 
+                cancelButtonColor: '#3b82f6',
+                confirmButtonText: 'نعم، تصفير كل الداتا', 
+                cancelButtonText: 'تراجع' 
+            }).then(async (res) => { 
+                if (res.isConfirmed) { 
+                    Swal.fire({title: 'جاري تصفير السنتر...', allowOutsideClick: false, didOpen: ()=>Swal.showLoading()}); 
+                    try { 
+                        const deletePromises = [];
+
+                        // 1. مسح الطلاب (بما في ذلك الغياب والحضور بداخلهم)
+                        const studentsSnap = await getDocs(collection(db, "centers", id, "students"));
+                        studentsSnap.forEach(docSnap => deletePromises.push(deleteDoc(docSnap.ref)));
+
+                        // 2. مسح المجموعات
+                        const groupsSnap = await getDocs(collection(db, "centers", id, "groups"));
+                        groupsSnap.forEach(docSnap => deletePromises.push(deleteDoc(docSnap.ref)));
+
+                        // 3. مسح المشرفين 
+                        const supervisorsSnap = await getDocs(collection(db, "centers", id, "supervisors"));
+                        supervisorsSnap.forEach(docSnap => deletePromises.push(deleteDoc(docSnap.ref)));
+
+                        // 4. مسح الدرجات القديمة
+                        const gradesSnap = await getDocs(collection(db, "centers", id, "grades"));
+                        gradesSnap.forEach(docSnap => deletePromises.push(deleteDoc(docSnap.ref)));
+
+                        // 5. مسح تقارير السلوك القديمة
+                        const behaviorSnap = await getDocs(collection(db, "centers", id, "behavior"));
+                        behaviorSnap.forEach(docSnap => deletePromises.push(deleteDoc(docSnap.ref)));
+
+                        // 6. مسح المصروفات المالية للعام القديم
+                        const expensesSnap = await getDocs(collection(db, "centers", id, "expenses"));
+                        expensesSnap.forEach(docSnap => deletePromises.push(deleteDoc(docSnap.ref)));
+
+                        // تنفيذ عملية المسح الشاملة لكل المجلدات الفرعية
+                        await Promise.all(deletePromises);
+
+                        Swal.fire('تم بنجاح', 'تم تصفير السنتر بالكامل وهو جاهز الآن لعام دراسي جديد!', 'success'); 
+                    } catch(e) { 
+                        console.error(e);
+                        Swal.fire('خطأ', 'حدث خطأ أثناء المسح، راجع الكونسول.', 'error'); 
+                    } 
+                } 
+            }); 
+        }
+        
+        window.manageSupervisors = async function(centerId, centerName) { Swal.fire({title: 'جاري تحميل المشرفين...', allowOutsideClick: false, didOpen: () => Swal.showLoading()}); try { const supSnap = await getDocs(collection(db, "centers", centerId, "supervisors")); let supHtml = '<div style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px; max-height: 200px; overflow-y: auto;">'; if(supSnap.empty) { supHtml += '<p style="color:var(--text-muted); font-size:12px; text-align:center;">لا يوجد مشرفين مضافين.</p>'; } else { supSnap.forEach(doc => { let s = doc.data(); supHtml += `<div style="background:var(--bg-main); padding:10px; border-radius:8px; border:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;"><div style="text-align:right;"><strong style="color:var(--primary); font-size:12px;"><i class="fa-solid fa-user-shield"></i> ${s.name}</strong><br><span style="font-size:10px; color:#e2e8f0; font-family:monospace;">ID: ${s.username} | Pass: ${s.password}</span></div><button class="btn-del-ticket" onclick="deleteSupervisor('${centerId}', '${doc.id}', '${centerName}')" title="حذف المشرف"><i class="fa-solid fa-trash-can"></i></button></div>`; }); } supHtml += '</div>'; Swal.fire({ title: `<span style="color:var(--primary); font-size: 16px;"><i class="fa-solid fa-users-gear"></i> مشرفي: ${centerName}</span>`, html: supHtml + `<button class="btn btn-success" style="width:100%;" onclick="addNewSupervisor('${centerId}', '${centerName}')"><i class="fa-solid fa-user-plus"></i> إضافة مشرف جديد</button>`, showConfirmButton: false, showCloseButton: true }); } catch(e) { Swal.fire('خطأ', 'فشل تحميل قائمة المشرفين', 'error'); } }
+        window.addNewSupervisor = async function(centerId, centerName) { const { value: formVals } = await Swal.fire({ title: 'إضافة مشرف جديد', html: `<input id="sup-name" class="swal2-input" placeholder="اسم المشرف (مثال: أ. محمد)"><input id="sup-user" class="swal2-input" placeholder="رقم الدخول (ID)"><input id="sup-pass" class="swal2-input" placeholder="كلمة المرور"><div style="text-align:right; margin-top:10px; background:var(--bg-main); padding:10px; border-radius:8px; border:1px solid var(--border);"><strong style="display:block; margin-bottom:8px; color:#fff; font-size: 12px;"><i class="fa-solid fa-list-check"></i> تحديد الصلاحيات:</strong><label class="perm-check-wrap"><input type="checkbox" id="perm-add" checked> إدارة الطلاب</label><label class="perm-check-wrap"><input type="checkbox" id="perm-att" checked> تسجيل الحضور</label><label class="perm-check-wrap"><input type="checkbox" id="perm-fin" checked> الحسابات والماليات</label><label class="perm-check-wrap" style="color:#fca5a5;"><input type="checkbox" id="perm-del"> حذف السجلات</label></div>`, showCancelButton: true, confirmButtonText: 'حفظ', cancelButtonText: 'إلغاء', preConfirm: () => { return { name: document.getElementById('sup-name').value.trim(), username: document.getElementById('sup-user').value.trim(), password: document.getElementById('sup-pass').value.trim(), created_at: new Date().toISOString(), permissions: { manage_students: document.getElementById('perm-add').checked, manage_attendance: document.getElementById('perm-att').checked, view_finance: document.getElementById('perm-fin').checked, delete_records: document.getElementById('perm-del').checked } } } }); if(formVals) { if(!formVals.name || !formVals.username || !formVals.password) return Swal.fire('خطأ', 'البيانات غير مكتملة', 'error').then(()=>addNewSupervisor(centerId, centerName)); try { Swal.fire({title: 'جاري الحفظ...', didOpen:()=>Swal.showLoading()}); await setDoc(doc(db, "centers", centerId, "supervisors", formVals.username), formVals); Swal.fire({toast:true, position:'top', icon:'success', title:'تم إضافة المشرف', showConfirmButton:false, timer:2000}).then(() => manageSupervisors(centerId, centerName)); } catch(e) { Swal.fire('خطأ', 'فشل الحفظ', 'error'); } } else { manageSupervisors(centerId, centerName); } }
+        window.deleteSupervisor = async function(centerId, supId, centerName) { Swal.fire({ title: 'حذف المشرف؟', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'نعم، احذف', cancelButtonText: 'إلغاء' }).then(async (res) => { if(res.isConfirmed) { await deleteDoc(doc(db, "centers", centerId, "supervisors", supId)); Swal.fire({toast:true, position:'top', icon:'success', title:'تم الحذف بنجاح', showConfirmButton:false, timer:1500}).then(() => manageSupervisors(centerId, centerName)); } }); }
+        
+        window.xrayCenter = async function(id) { Swal.fire({title:'جاري السحب...', didOpen:()=>Swal.showLoading()}); try { const stSnap = await getDocs(collection(db, "centers", id, "students")); const grSnap = await getDocs(collection(db, "centers", id, "groups")); let studentsCount = stSnap.size; let groups = []; grSnap.forEach(d => groups.push(d.data())); let realRev = 0; stSnap.forEach(s => { let stu = s.data(); let myGrp = groups.find(g => g.id === stu.group_id); if(myGrp) realRev += parseInt(myGrp.monthly_price || 0); }); Swal.fire({ title: 'إحصائيات سريعة 👁️', html: `<div style="font-family:'Cairo'; text-align:right; font-size:14px; line-height:2;"><p>👥 إجمالي الطلاب: <strong style="color:var(--primary);">${studentsCount}</strong></p><p>📚 المجموعات النشطة: <strong style="color:var(--purple);">${groups.length}</strong></p><hr style="border-color:var(--border); margin:10px 0;"><p>💰 الدخل الشهري: <strong style="color:var(--success);">${realRev} ج</strong></p></div>`, confirmButtonText: 'إغلاق', confirmButtonColor: '#3b82f6' }); } catch(e) { Swal.fire('خطأ', 'فشل في سحب البيانات', 'error'); } }
+        window.sendPrivateMessage = async function(centerId, centerName) { const { value: text } = await Swal.fire({ title: `رسالة لـ (${centerName})`, input: 'textarea', showCancelButton: true, confirmButtonText: 'إرسال 🚀', cancelButtonText: 'إلغاء', inputValidator: (val) => { if (!val) return 'اكتب رسالة!' } }); if (text) { await updateDoc(doc(db, "centers_auth", centerId), { private_alert: { message: text, type: 'info', date: new Date().toISOString() } }); Swal.fire('تم الإرسال!', 'ستظهر الرسالة للمدرس.', 'success'); } }
+        window.sendBillingAlert = async function(id, name) { let msg = `تنبيه عاجل ⚠️\nبرجاء تسديد اشتراك المنظومة لضمان عدم توقف الخدمة.`; await updateDoc(doc(db, "centers_auth", id), { private_alert: { message: msg, type: 'danger', date: new Date().toISOString() } }); Swal.fire('تم', 'تم إرسال إنذار الدفع.', 'success'); }
+        window.clearCenterAlert = async function(id) { await updateDoc(doc(db, "centers_auth", id), { private_alert: deleteField() }); Swal.fire('تم', 'تم مسح التنبيهات.', 'success'); }
+        window.toggleSuspendPrompt = async function(id, isActive) { if(isActive) { const { value: reason } = await Swal.fire({ title: 'منع الدخول', input: 'text', showCancelButton: true, confirmButtonText: 'إغلاق الآن 🔒', confirmButtonColor: '#ef4444' }); if(reason !== undefined) { await updateDoc(doc(db, "centers_auth", id), { is_active: false, suspend_reason: reason || 'مغلق من الإدارة.' }); } } else { await updateDoc(doc(db, "centers_auth", id), { is_active: true, suspend_reason: deleteField() }); } }
+        
+        window.exportSingleCenter = async function(id, name) { Swal.fire({title: 'التجهيز...', didOpen:()=>Swal.showLoading()}); let backup = { metadata: { type: "single_center", id: id, name: name, date: new Date().toISOString() }, students: [], groups: [] }; const stSnap = await getDocs(collection(db, "centers", id, "students")); stSnap.forEach(s => backup.students.push({ id: s.id, ...s.data() })); const grSnap = await getDocs(collection(db, "centers", id, "groups")); grSnap.forEach(g => backup.groups.push({ id: g.id, ...g.data() })); const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `Backup_${name}_${todayStr}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); Swal.fire('تم التصدير', 'بنجاح', 'success'); }
+
+        window.targetRestoreId = null;
+        window.triggerCenterRestore = function(id) { window.targetRestoreId = id; document.getElementById('singleRestoreInput').click(); }
+        window.handleSingleRestore = async function(event) { const file = event.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = async function(e) { try { const data = JSON.parse(e.target.result); let studentsData = data.students; let groupsData = data.groups; Swal.fire({title: 'الرفع...', didOpen: () => Swal.showLoading()}); for (let s of studentsData) await setDoc(doc(db, "centers", window.targetRestoreId, "students", s.id || s.barcode), s); for (let g of groupsData) await setDoc(doc(db, "centers", window.targetRestoreId, "groups", g.id), g); event.target.value = ''; Swal.fire('تم!', 'بنجاح.', 'success'); } catch (error) { Swal.fire('خطأ', 'ملف تالف.', 'error'); } }; reader.readAsText(file); }
+
+        window.superGlobalBackup = async function() { Swal.fire({ title: 'تجهيز النسخة 🚀', didOpen: () => Swal.showLoading() }); try { let fullBackup = { metadata: { type: "full_platform", date: new Date().toISOString() }, centersAuth: [], centerData: {} }; const authSnap = await getDocs(collection(db, "centers_auth")); authSnap.forEach(doc => { fullBackup.centersAuth.push({ id: doc.id, ...doc.data() }); }); for (let center of fullBackup.centersAuth) { fullBackup.centerData[center.id] = { students: [], groups: [] }; const stSnap = await getDocs(collection(db, "centers", center.id, "students")); stSnap.forEach(s => fullBackup.centerData[center.id].students.push({ id: s.id, ...s.data() })); const grSnap = await getDocs(collection(db, "centers", center.id, "groups")); grSnap.forEach(g => fullBackup.centerData[center.id].groups.push({ id: g.id, ...g.data() })); } const blob = new Blob([JSON.stringify(fullBackup, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `Super_Backup_${todayStr}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); Swal.fire('تم بنجاح! 🎉', 'تم سحب الداتا بالكامل.', 'success'); } catch(e) { Swal.fire('خطأ', 'حدث مشكلة', 'error'); } }
+        window.triggerGlobalRestore = function() { Swal.fire({ title: 'تنبيه خطير!', icon: 'error', showCancelButton: true, confirmButtonText: 'نعم', confirmButtonColor: '#ef4444' }).then((res) => { if (res.isConfirmed) document.getElementById('globalRestoreInput').click(); }); }
+        window.handleGlobalRestore = async function(event) { const file = event.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = async function(e) { try { const data = JSON.parse(e.target.result); Swal.fire({title: 'جاري تدمير و بناء المنصة... ⏳', allowOutsideClick: false, didOpen: () => Swal.showLoading()}); for (let auth of data.centersAuth) { await setDoc(doc(db, "centers_auth", auth.id), auth); let centerD = data.centerData[auth.id]; if(centerD) { for (let s of centerD.students) await setDoc(doc(db, "centers", auth.id, "students", s.id || s.barcode), s); for (let g of centerD.groups) await setDoc(doc(db, "centers", auth.id, "groups", g.id), g); } } event.target.value = ''; Swal.fire('تم!', 'استعادة كاملة بنجاح.', 'success').then(() => location.reload()); } catch (error) { Swal.fire('خطأ', 'ملف تالف.', 'error'); } }; reader.readAsText(file); }
+        window.impersonateCenter = function(centerId, centerName) { sessionStorage.setItem("activeCenterId", centerId); window.open("dashboard.html", "_blank"); }
+        window.filterCentersLocal = function() { const value = document.getElementById("searchCenterInput").value.toLowerCase(); const rows = document.querySelectorAll("#centersTableBody tr"); rows.forEach(row => { row.style.display = row.textContent.toLowerCase().includes(value) ? "" : "none"; }); }
+        
+        window.sendGlobalAnnouncement = async function() { const msg = document.getElementById("announcementMsg").value.trim(); if(!msg) return; await setDoc(doc(db, "admin_settings", "announcement"), { message: msg, date: new Date().toISOString() }); Swal.fire('تم الإرسال', 'الجميع يمكنه رؤية الإشعار', 'success'); document.getElementById("announcementMsg").value = ''; closeSystemModal('modal-announcement'); }
+        window.deleteGlobalAnnouncement = async function() { await deleteDoc(doc(db, "admin_settings", "announcement")); Swal.fire('تم الإلغاء', 'تم الإزالة.', 'success'); closeSystemModal('modal-announcement'); }
+
+        window.previewAndCompressImage = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 300; 
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                    document.getElementById('adminImagePreview').src = compressedBase64;
+                    document.getElementById('imagePreviewContainer').style.display = 'block';
+                    document.getElementById('settingAdminPhoto').value = compressedBase64;
+                }
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function loadAdminProfile() { const docSnap = await getDoc(doc(db, "admin_settings", "profile")); if (docSnap.exists()) { const data = docSnap.data(); document.getElementById("adminName").innerText = data.name; document.getElementById("adminPhone").innerText = data.phone; if(data.photo) { document.getElementById("adminPhoto").src = data.photo; document.getElementById("settingAdminPhoto").value = data.photo; } document.getElementById("settingAdminName").value = data.name; document.getElementById("settingAdminPhone").value = data.phone; } }
+        loadAdminProfile();
+        
+        window.updateAdminProfile = async function() { const name = document.getElementById("settingAdminName").value.trim(); const phone = document.getElementById("settingAdminPhone").value.trim(); const photo = document.getElementById("settingAdminPhoto").value.trim(); try { await setDoc(doc(db, "admin_settings", "profile"), { name, phone, photo }); Swal.fire('تم', 'تحديث الهيدر بنجاح', 'success'); loadAdminProfile(); closeSystemModal('modal-adminSettings'); document.getElementById('imagePreviewContainer').style.display = 'none'; } catch (error) { Swal.fire('خطأ', 'فشل الحفظ', 'error'); } }
+        
+        window.createNewCenter = async function() { 
+            const name = document.getElementById("newCenterName").value.trim(); 
+            const centerId = document.getElementById("newCenterId").value.trim(); 
+            const password = document.getElementById("newCenterPass").value.trim(); 
+            const expiry = document.getElementById("newCenterExpiry").value; 
+            
+            if(!name || !centerId || !password || !expiry) return Swal.fire('تنبيه', 'أكمل البيانات', 'warning'); 
+
+            const centerEmail = centerId + "@system.com";
+
+            Swal.fire({title: 'جاري إنشاء الحساب...', didOpen: () => Swal.showLoading()});
+
+            try {
+                await createUserWithEmailAndPassword(secondaryAuth, centerEmail, password);
+                await signOut(secondaryAuth);
+
+                await setDoc(doc(db, "centers_auth", centerId), { 
+                    center_name: name, 
+                    email: centerEmail,
+                    password: password, 
+                    expiry_date: expiry, 
+                    is_active: true, 
+                    created_at: new Date().toISOString() 
+                }); 
+                
+                Swal.fire('نجاح', `تم تفعيل ${name} وإنشاء حساب الدخول بنجاح`, 'success'); 
+                document.getElementById("newCenterName").value = ''; 
+                document.getElementById("newCenterId").value = ''; 
+                document.getElementById("newCenterPass").value = ''; 
+                closeSystemModal('modal-addCenter'); 
+
+            } catch (error) {
+                if (error.code === 'auth/email-already-in-use') {
+                    Swal.fire('خطأ', 'هذا الكود (ID) مستخدم بالفعل لسنتر آخر، جرب كود مختلف.', 'error');
+                } else if (error.code === 'auth/weak-password') {
+                    Swal.fire('خطأ', 'كلمة المرور ضعيفة جداً، يجب أن تكون 6 أحرف على الأقل.', 'error');
+                } else {
+                    Swal.fire('خطأ', 'فشل إنشاء الحساب: ' + error.message, 'error');
+                }
+            }
+        }
+
+        window.editCenterFull = async function(oldId, currentName, currentPassword, currentExpiry) { 
+            const { value: formValues } = await Swal.fire({ 
+                title: 'تعديل بيانات وباسورد السنتر', 
+                html: `
+                    <label class="swal2-label">اسم السنتر:</label>
+                    <input id="swal-name" class="swal2-input" value="${currentName}">
+                    <label class="swal2-label">كلمة المرور:</label>
+                    <input id="swal-pass" class="swal2-input" value="${currentPassword}">
+                    <label class="swal2-label">تاريخ الانتهاء:</label>
+                    <input type="date" id="swal-expiry" class="swal2-input" value="${currentExpiry}">
+                `, 
+                showCancelButton: true, confirmButtonText: 'حفظ التعديلات', cancelButtonText: 'إلغاء',
+                preConfirm: () => { 
+                    return { 
+                        newName: document.getElementById('swal-name').value.trim(), 
+                        newPass: document.getElementById('swal-pass').value.trim(), 
+                        newExp: document.getElementById('swal-expiry').value 
+                    } 
+                } 
+            }); 
+
+            if (formValues) { 
+                Swal.fire({title: 'جاري التحديث والتأمين...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+
+                try {
+                    if (formValues.newPass !== currentPassword) {
+                        const centerEmail = oldId + "@system.com"; 
+                        
+                        const userCredential = await signInWithEmailAndPassword(secondaryAuth, centerEmail, currentPassword);
+                        await updatePassword(userCredential.user, formValues.newPass);
+                        await signOut(secondaryAuth);
+                    }
+
+                    await updateDoc(doc(db, "centers_auth", oldId), { 
+                        center_name: formValues.newName, 
+                        password: formValues.newPass, 
+                        expiry_date: formValues.newExp 
+                    }); 
+
+                    Swal.fire('تم بنجاح', 'تم تحديث بيانات السنتر وتغيير كلمة المرور الفعلية للدخول!', 'success'); 
+                } catch (error) {
+                    console.error(error);
+                    await signOut(secondaryAuth).catch(()=>{});
+                    Swal.fire('خطأ', 'حدثت مشكلة. تأكد أن الباسورد القديم المسجل صحيح، وأن الباسورد الجديد 6 أحرف على الأقل.', 'error');
+                }
+            } 
+        }
+
+        window.deleteCenter = async function(centerId, centerName) { 
+            Swal.fire({ 
+                title: 'حذف السنتر بالكامل؟', 
+                text: `هل أنت متأكد من حذف (${centerName}) نهائياً؟ هذا الإجراء سيمسح (الطلاب، المجموعات، المشرفين، الدرجات، السلوك، والمصروفات) ولن يتبقى أي أثر للسنتر!`, 
+                icon: 'warning', 
+                showCancelButton: true, 
+                confirmButtonColor: '#ef4444', 
+                cancelButtonColor: '#3b82f6',
+                confirmButtonText: 'نعم، مسح من الجذور',
+                cancelButtonText: 'إلغاء'
+            }).then(async (res) => { 
+                if (res.isConfirmed) { 
+                    Swal.fire({title: 'جاري فرم بيانات السنتر...', allowOutsideClick: false, didOpen: ()=>Swal.showLoading()});
+                    try {
+                        const deletePromises = [];
+
+                        // 1. مسح الطلاب
+                        const studentsSnap = await getDocs(collection(db, "centers", centerId, "students"));
+                        studentsSnap.forEach(docSnap => deletePromises.push(deleteDoc(docSnap.ref)));
+
+                        // 2. مسح المجموعات
+                        const groupsSnap = await getDocs(collection(db, "centers", centerId, "groups"));
+                        groupsSnap.forEach(docSnap => deletePromises.push(deleteDoc(docSnap.ref)));
+
+                        // 3. مسح المشرفين
+                        const supervisorsSnap = await getDocs(collection(db, "centers", centerId, "supervisors"));
+                        supervisorsSnap.forEach(docSnap => deletePromises.push(deleteDoc(docSnap.ref)));
+
+                        // 4. مسح الدرجات
+                        const gradesSnap = await getDocs(collection(db, "centers", centerId, "grades"));
+                        gradesSnap.forEach(docSnap => deletePromises.push(deleteDoc(docSnap.ref)));
+
+                        // 5. مسح تقارير السلوك
+                        const behaviorSnap = await getDocs(collection(db, "centers", centerId, "behavior"));
+                        behaviorSnap.forEach(docSnap => deletePromises.push(deleteDoc(docSnap.ref)));
+
+                        // 6. مسح المصروفات (السجل المالي)
+                        const expensesSnap = await getDocs(collection(db, "centers", centerId, "expenses"));
+                        expensesSnap.forEach(docSnap => deletePromises.push(deleteDoc(docSnap.ref)));
+
+                        // تنفيذ عملية الفرم الشاملة لكل المجلدات الفرعية
+                        await Promise.all(deletePromises);
+
+                        // 7. مسح مستند السنتر نفسه
+                        await deleteDoc(doc(db, "centers", centerId));
+
+                        // 8. مسح حساب السنتر من قائمة الأدمن
+                        await deleteDoc(doc(db, "centers_auth", centerId)); 
+
+                        Swal.fire('تم الحذف', 'تم فرم السنتر وكل بياناته من قاعدة البيانات بنجاح، وتم توفير المساحة بالكامل.', 'success');
+                    } catch(e) {
+                        console.error("خطأ أثناء الحذف:", e);
+                        Swal.fire('خطأ', 'حدثت مشكلة أثناء الحذف، راجع الكونسول.', 'error');
+                    }
+                } 
+            }); 
+        }
+
+        window.logoutAdmin = function() { sessionStorage.clear(); window.location.href = 'index.html'; }
+        window.copyCenterData = function(name, id, pass, exp) { navigator.clipboard.writeText(`مرحباً بك 🌟\n📌 اسم السنتر: ${name}\n🔑 الكود: ${id}\n🔒 المرور: ${pass}\n⏳ صالح حتى: ${exp}`).then(() => { Swal.fire({ title: 'تم النسخ!', icon: 'success', timer: 1500, showConfirmButton: false }); }); }
+
+    </script>
+</body>
+</html>

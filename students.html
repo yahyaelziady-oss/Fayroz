@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>إدارة الطلاب - منظومة الإدارة السحابية</title>
+    <!-- خطوط وأيقونات ومكتبات -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+    <!-- سكريبت التحقق الفوري لمنع وميض الصفحة -->
+    <script>
+        const currentCenterId = sessionStorage.getItem("activeCenterId");
+        if (!currentCenterId) { window.location.href = "index.html"; }
+    </script>
+
+    <style>
+        :root {
+            --bg-dark: #121826; --bg-nav: #1e2532; --text-main: #ffffff; --text-muted: #94a3b8;
+            --btn-blue: #3b82f6; --btn-purple: #7c3aed; --btn-orange: #f59e0b;
+            --btn-green: #10b981; --btn-red: #ef4444; --btn-cyan: #0ea5e9; --btn-gray: #475569;
+            --border: #334155; --card-bg: #1a1f2c;
+        }
+
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            background-color: var(--bg-dark); color: var(--text-main); max-width: 500px; margin: 0 auto; 
+            min-height: 100vh; position: relative; padding-bottom: 80px; box-shadow: 0 0 25px rgba(0,0,0,0.6); overflow-x: hidden; 
+        }
+
+        /* تعديلات تصغير الـ UX للنوافذ المنبثقة (Modal Compression) */
+        div:where(.swal2-container) { z-index: 9999 !important; }
+        div:where(.swal2-container) div:where(.swal2-popup) { background-color: #1e293b; border: 1px solid var(--border); width: 95% !important; max-width: 400px; padding: 15px 10px; }
+        div:where(.swal2-container) h2:where(.swal2-title) { color: #ffffff !important; font-family: 'Cairo', sans-serif !important; font-size: 18px !important; margin-bottom: 10px; }
+        div:where(.swal2-container) div:where(.swal2-html-container) { margin: 0 !important; overflow: visible !important;}
+        
+        .swal-form-group { margin-bottom: 8px; text-align: right; }
+        .swal-form-group label { display: block; color: #cbd5e1; font-weight: 700; font-size: 11px; margin-bottom: 4px; }
+        .swal-form-group input, .swal-form-group select { width: 100%; padding: 8px 10px; background-color: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: white; font-size: 12px; font-weight: 600; outline: none; transition: 0.2s;}
+        .swal-form-group input:focus, .swal-form-group select:focus { border-color: var(--btn-blue); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+        .swal-form-row { display: flex; gap: 8px; }
+        .swal-form-col { flex: 1; }
+
+        /* ضغط الهيدر */
+        .top-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .header-right { display: flex; align-items: center; gap: 10px; }
+        .menu-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: white; min-width: 32px; height: 32px; border-radius: 8px; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        .profile-pic { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--btn-blue); }
+        .net-status { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; border-radius: 50%; background-color: var(--btn-green); border: 2px solid var(--bg-nav); z-index: 10; display: flex; justify-content: center; align-items: center; transition: 0.3s;}
+        
+        .profile-info { display: flex; flex-direction: column; justify-content: center; text-align: right;}
+        .profile-info h1 { font-size: 13px; font-weight: 800; color: #ffffff; margin-bottom: 0;}
+        .profile-info p { font-size: 9px; color: var(--text-muted); font-weight: 600; margin: 0;}
+        .today-classes-btn { background: linear-gradient(135deg, #4f46e5, #3b82f6); border: none; color: white; padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 12px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+
+        /* ضغط البطاقات العلوية */
+        .section-card { background: var(--card-bg); border-radius: 12px; padding: 10px; border: 1px solid var(--border); margin: 10px 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        .section-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .badge { background: var(--btn-blue); color: white; padding: 2px 8px; border-radius: 8px; font-size: 11px; font-weight: bold; }
+        
+        .action-btn { width: 100%; padding: 10px; border-radius: 10px; border: none; color: white; font-size: 14px; font-weight: 800; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: 0.2s; margin-bottom: 10px;}
+        .action-btn:active { transform: scale(0.97); }
+        .bg-blue { background-color: var(--btn-blue); } .bg-red { background-color: var(--btn-red); } .bg-green { background-color: var(--btn-green); } .bg-purple { background-color: var(--btn-purple); } .bg-orange { background-color: var(--btn-orange); color: black !important;}
+
+        .financial-filters-nav { display: flex; gap: 4px; margin-bottom: 8px; background: var(--bg-dark); padding: 4px; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto;}
+        .fin-filter-btn { flex: 1; padding: 6px 4px; border: none; background: transparent; color: var(--text-muted); border-radius: 6px; font-weight: 800; font-size: 11px; cursor: pointer; transition: 0.2s; white-space: nowrap;}
+        .fin-filter-btn.active { background: var(--btn-blue); color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
+
+        .filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+        .form-input { width: 100%; padding: 8px; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: white; font-size: 12px; outline: none; }
+        .form-input:focus { border-color: var(--btn-blue); }
+
+        /* قائمة الطلاب */
+        .live-list { display: flex; flex-direction: column; gap: 10px; }
+        .student-card { background: var(--bg-dark); border: 1px solid var(--border); padding: 10px 12px; border-radius: 10px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; overflow: hidden; transition: 0.3s; cursor: pointer; }
+        .student-card:active { transform: scale(0.98); border-color: var(--btn-blue); }
+        .student-card.suspended { opacity: 0.6; filter: grayscale(50%); border-color: var(--btn-red); }
+        
+        .status-indicator { position: absolute; right: 0; top: 0; bottom: 0; width: 4px; }
+        .status-indicator.paid { background-color: var(--btn-green); }
+        .status-indicator.unpaid { background-color: var(--btn-red); }
+        .status-indicator.exempt { background-color: var(--btn-orange); }
+
+        .student-card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px; margin-right: 6px;}
+        .student-card-header h4 { font-size: 13px; font-weight: 800; color: #fff; margin: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;}
+        .student-code-badge { background: rgba(245, 158, 11, 0.15); color: var(--btn-orange); padding: 2px 6px; border-radius: 6px; font-weight: 900; font-size: 12px; letter-spacing: 1px; border: 1px solid rgba(245, 158, 11, 0.3); }
+        
+        .student-details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px; color: var(--text-muted); font-weight: 600; margin-right: 6px; }
+        .student-details-grid p { display: flex; align-items: center; gap: 4px; margin: 0;}
+        .student-details-grid i { color: var(--btn-cyan); font-size: 11px; width: 14px; text-align: center;}
+        
+        .financial-toggles { display: flex; gap: 4px; background: rgba(255,255,255,0.02); padding: 6px; border-radius: 8px; margin-right: 6px; justify-content: space-between;}
+        .f-btn { flex: 1; border: 1px solid var(--border); background: transparent; color: var(--text-muted); padding: 4px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; transition: 0.2s;}
+        .f-btn.active-paid { background: var(--btn-green); color: white; border-color: var(--btn-green); }
+        .f-btn.active-unpaid { background: var(--btn-red); color: white; border-color: var(--btn-red); }
+        .f-btn.active-exempt { background: var(--btn-orange); color: black; border-color: var(--btn-orange); }
+
+        .student-actions-row { display: flex; justify-content: flex-start; gap: 4px; margin-top: 2px; margin-right: 6px; flex-wrap: wrap;}
+        .btn-icon { width: 30px; height: 30px; border-radius: 6px; border: none; color: white; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 13px; transition: 0.2s; }
+        .btn-icon:active { transform: scale(0.9); }
+        .btn-icon.call { background-color: #2563eb; } .btn-icon.whatsapp { background-color: var(--btn-green); }
+        .btn-icon.edit { background-color: var(--btn-blue); } .btn-icon.delete { background-color: var(--btn-red); }
+        .btn-icon.copy { background-color: var(--btn-cyan); } .btn-icon.freeze { background-color: var(--btn-gray); }
+        .btn-icon.report { background-color: var(--btn-orange); color: black; width: auto; padding: 0 8px; font-weight: bold; font-size: 11px; display: flex; gap: 4px;}
+        .btn-icon.id-card { background-color: var(--btn-purple); width: auto; padding: 0 8px; font-weight: bold; font-size: 11px; display: flex; gap: 4px;}
+
+        /* النوافذ المنبثقة للتقرير والاسكانر */
+        .scanner-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(18, 24, 38, 0.95); z-index: 2500; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(5px);}
+        .scanner-box { background: #1e293b; border: 2px solid var(--btn-blue); border-radius: 16px; padding: 20px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 0 30px rgba(59, 130, 246, 0.3); }
+        .scanner-box h2 { color: white; font-weight: 900; margin-bottom: 10px; font-size: 18px;}
+        .scanner-box p { color: var(--text-muted); font-size: 12px; margin-bottom: 15px; }
+        .scanner-input-massive { width: 100%; background: var(--bg-dark); border: 2px dashed var(--text-muted); padding: 15px; text-align: center; font-size: 24px; font-weight: 900; color: var(--btn-orange); border-radius: 12px; outline: none; letter-spacing: 5px; font-family: monospace; transition: 0.3s;}
+        .scanner-input-massive:focus { border-color: var(--btn-green); box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); }
+        .close-scanner-btn { background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;}
+
+        .report-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 2000; display: none; justify-content: center; align-items: flex-end; padding-top: 50px; }
+        .report-modal { background: #1e293b; width: 100%; max-width: 500px; height: 85vh; border-radius: 20px 20px 0 0; display: flex; flex-direction: column; overflow: hidden; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-top: 2px solid var(--btn-blue); box-shadow: 0 -5px 25px rgba(59,130,246,0.3);}
+        .report-modal.open { transform: translateY(0); }
+        .report-header { padding: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); }
+        .report-header h2 { margin: 0; font-size: 16px; font-weight: 800; color: #fff; }
+        .close-modal-btn { background: transparent; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; }
+        .report-body { padding: 15px; overflow-y: auto; flex: 1; }
+        
+        .mini-btn { background: var(--bg-nav); border: 1px solid var(--border); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; font-family: 'Cairo'; }
+        
+        /* شريط التنقل السفلي الثابت */
+        .bottom-nav { 
+            position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 500px; 
+            background-color: var(--bg-nav); display: flex; justify-content: space-around; align-items: center; 
+            height: 65px; border-top: 1px solid rgba(255,255,255,0.05); z-index: 9999; box-shadow: 0 -5px 15px rgba(0,0,0,0.3); 
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-muted); cursor: pointer; text-decoration: none; transition: 0.2s; flex: 1;}
+        .nav-item i { font-size: 18px; } .nav-item span { font-size: 10px; font-weight: 700; }
+        .nav-item.active { color: var(--btn-blue); }
+
+        #printable-area { display: none; }
+        @media print { body * { visibility: hidden; } #printable-area, #printable-area * { visibility: visible; } #printable-area { position: absolute; left: 0; top: 0; width: 100%; display: flex; justify-content: center; margin-top: 20px; } .swal2-container { display: none !important; } }
+    </style>
+</head>
+<body>
+
+    <header class="top-header">
+        <div class="header-right">
+            <button class="menu-btn" onclick="location.reload(true)"><i class="fa-solid fa-arrows-rotate"></i></button>
+            <div class="profile-wrapper">
+                <div style="position: relative; display: inline-block;">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="profile-pic" id="headerTeacherPhoto">
+                    <div class="net-status" id="networkStatus"></div>
+                </div>
+                <div class="profile-info">
+                    <!-- يتم التحميل الفوري من الكاش هنا -->
+                    <h1 id="headerTeacherName">الصفحة تحمل...</h1>
+                    <p id="headerCenterName">منظومة الإدارة السحابية</p>
+                </div>
+            </div>
+        </div>
+        <div class="header-left">
+            <button class="today-classes-btn" onclick="openScanner()">الحضور <i class="fa-solid fa-qrcode"></i></button>
+        </div>
+    </header>
+
+    <div style="padding: 10px 15px;">
+        <button class="action-btn bg-blue" onclick="openRegisterStudent()" style="padding: 10px; font-size: 14px;">
+            <i class="fa-solid fa-user-plus"></i> تسجيل طالب جديد
+        </button>
+
+        <div class="section-card" style="margin: 0 0 10px 0;">
+            <div class="section-title"><span><i class="fa-solid fa-magnifying-glass"></i> رادار البحث والفلترة</span></div>
+            
+            <div class="financial-filters-nav">
+                <button class="fin-filter-btn active" id="f-all" onclick="setFinFilter('all')">الكل</button>
+                <button class="fin-filter-btn" id="f-paid" onclick="setFinFilter('paid')">تم الدفع</button>
+                <button class="fin-filter-btn" id="f-unpaid" onclick="setFinFilter('unpaid')">لم يدفع</button>
+                <button class="fin-filter-btn" id="f-exempt" onclick="setFinFilter('exempt')">معفى</button>
+            </div>
+
+            <div class="filter-row">
+                <select id="studentGroupFilter" class="form-input" onchange="window.triggerRender()" style="padding: 8px; font-size: 12px;">
+                    <option value="">كل المجموعات</option>
+                </select>
+                <input type="text" id="studentSearchInput" class="form-input" placeholder="الاسم أو الكود..." oninput="window.triggerRender()" style="padding: 8px; font-size: 12px;">
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px;">
+                <button class="action-btn bg-red" style="margin-bottom:0; padding:8px; font-size:11px;" onclick="bulkDeleteStudents()">
+                    <i class="fa-solid fa-trash-can"></i> حذف المعروض
+                </button>
+                <button class="action-btn bg-purple" style="margin-bottom:0; padding:8px; font-size:11px;" onclick="copyAllNumbers()" title="نسخ أرقام الواتساب">
+                    <i class="fa-brands fa-whatsapp"></i> نسخ الأرقام
+                </button>
+                <button class="action-btn bg-green" style="margin-bottom:0; padding:8px; font-size:11px;" onclick="exportToCSV()" title="تصدير كشوف الإكسيل">
+                    <i class="fa-solid fa-file-excel"></i> تصدير إكسيل
+                </button>
+                <button class="action-btn bg-orange" style="margin-bottom:0; padding:8px; font-size:11px; font-weight: 800;" onclick="document.getElementById('csvFileInput').click()" title="استيراد كشوف الإكسيل">
+                    <i class="fa-solid fa-file-import"></i> استيراد طلاب
+                </button>
+                <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="importFromCSV(event)">
+            </div>
+        </div>
+
+        <div class="section-card" style="margin: 0;">
+            <div class="section-title">
+                <span><i class="fa-solid fa-address-card"></i> سجل الطلاب</span>
+                <span class="badge" id="filteredStudentsCount">0</span>
+            </div>
+            <div class="live-list" id="uiStudentsList">
+                <!-- الـ Render اللحظي يتم هنا -->
+            </div>
+        </div>
+    </div>
+
+    <!-- شاشات منبثقة -->
+    <div class="scanner-overlay" id="scannerOverlay">
+        <div class="scanner-box">
+            <h2><i class="fa-solid fa-expand"></i> رادار الحضور</h2>
+            <p>قم بتمرير الكارنيه أو اكتب 4 أرقام</p>
+            <input type="tel" id="liveScannerInput" class="scanner-input-massive" placeholder="----" oninput="checkAutoScan(this)" autocomplete="off">
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="close-scanner-btn" style="flex:1;" onclick="closeScanner()">إغلاق <i class="fa-solid fa-times"></i></button>
+                <button class="action-btn bg-red" style="flex:1; margin-bottom:0; padding:10px; font-size:13px;" onclick="endSession()">الإنهاء <i class="fa-solid fa-power-off"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="report-modal-overlay" id="reportOverlay">
+        <div class="report-modal" id="reportModal">
+            <div class="report-header">
+                <h2 id="reportStudentName">تقرير الطالب</h2>
+                <button class="close-modal-btn" onclick="closeReportModal()"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="report-body" id="reportContent"></div>
+        </div>
+    </div>
+
+    <div id="printable-area"></div>
+
+    <nav class="bottom-nav">
+        <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-house"></i><span>الرئيسية</span></a>
+        <a href="groups.html" class="nav-item"><i class="fa-solid fa-layer-group"></i><span>الصفوف</span></a>
+        <a href="students.html" class="nav-item active"><i class="fa-solid fa-users"></i><span>الطلاب</span></a>
+        <a href="grades.html" class="nav-item"><i class="fa-solid fa-graduation-cap"></i><span>الدرجات</span></a>
+        <a href="behavior.html" class="nav-item"><i class="fa-solid fa-star"></i><span>السلوك</span></a>
+        <a href="financial.html" class="nav-item"><i class="fa-solid fa-money-bill-wave"></i><span>المالية</span></a>
+    </nav>
+
+    <!-- سكريبت التحميل الفوري (Pre-Render) قبل تفعيل قواعد البيانات -->
+    <script>
+        // تعريف متغيرات الذاكرة والمحرك الأساسية عالمياً
+        window.allStudentsData = [];
+        window.allGroupsData = [];
+        window.currentFinFilter = 'all';
+        window.centerSupportPhone = "01004999884"; // الرقم المرجعي
+
+        // دالة الـ Render الموحدة
+        window.renderStudentsUI = function() {
+            const q = document.getElementById("studentSearchInput")?.value.trim().toLowerCase() || '';
+            const grp = document.getElementById("studentGroupFilter")?.value || '';
+            const list = document.getElementById("uiStudentsList");
+            const countBadge = document.getElementById("filteredStudentsCount");
+            if(!list || !window.allStudentsData) return;
+
+            const todayStr = new Date().toLocaleDateString('en-GB'); 
+            
+            let filtered = window.allStudentsData.filter(s => {
+                const matchQ = s.student_name.toLowerCase().includes(q) || s.barcode.includes(q);
+                const matchGrp = grp ? s.group_id === grp : true;
+                const matchFin = window.currentFinFilter === 'all' ? true : (s.payment_status === window.currentFinFilter || (!s.payment_status && window.currentFinFilter === 'unpaid'));
+                return matchQ && matchGrp && matchFin;
+            });
+            
+            window.currentFilteredData = filtered; 
+            if(countBadge) countBadge.innerText = filtered.length;
+            
+            let htmlContent = "";
+            filtered.forEach(s => {
+                let genderIcon = s.gender === 'أنثى' ? '👩‍🎓' : '👨‍🎓';
+                let indicatorClass = s.payment_status === 'paid' ? 'paid' : (s.payment_status === 'exempt' ? 'exempt' : 'unpaid');
+                let suspendedClass = s.is_suspended ? 'suspended' : '';
+                let suspendedBadge = s.is_suspended ? `<span class="badge bg-red" style="margin-right:4px; font-size:9px;">مجمد ❄️</span>` : '';
+                
+                let attendTodayBadge = '';
+                if (s.last_attend_date === todayStr) { attendTodayBadge = `<span class="badge bg-green" style="margin-right:4px; font-size:9px;"><i class="fa-solid fa-check"></i> حاضر</span>`; } 
+                else if (s.last_absent_date === todayStr) { attendTodayBadge = `<span class="badge bg-red" style="margin-right:4px; font-size:9px;"><i class="fa-solid fa-xmark"></i> غائب</span>`; }
+
+                htmlContent += `
+                    <div class="student-card ${suspendedClass}" onclick="if(window.openReportModal) window.openReportModal('${s.barcode}')">
+                        <div class="status-indicator ${indicatorClass}"></div>
+                        <div class="student-card-header">
+                            <h4>${genderIcon} ${s.student_name} ${suspendedBadge} ${attendTodayBadge}</h4>
+                            <span class="student-code-badge">${s.barcode}</span>
+                        </div>
+                        <div class="student-details-grid">
+                            <p><i class="fa-solid fa-layer-group"></i> ${s.group_name || 'بدون مجموعة'}</p>
+                            <p><i class="fa-solid fa-phone"></i> ${s.parent_phone || 'بدون رقم'}</p>
+                            <p><i class="fa-solid fa-wallet"></i> المحفظة: <span style="color:${s.wallet_balance < 0 ? '#ef4444' : '#10b981'}">${s.wallet_balance || 0} ج</span></p>
+                            <p><i class="fa-solid fa-user-clock"></i> الغياب المتتالي: <strong style="color:var(--btn-red); font-size:12px; margin-right:4px; background:rgba(239,68,68,0.15); padding:1px 6px; border-radius:4px;">${s.absence_count || 0}</strong></p>
+                        </div>
+                        
+                        <div class="financial-toggles">
+                            <button class="f-btn ${s.payment_status === 'paid' ? 'active-paid' : ''}" onclick="event.stopPropagation(); if(window.updatePaymentStatus) window.updatePaymentStatus('${s.barcode}', 'paid')">دفع 🟢</button>
+                            <button class="f-btn ${s.payment_status === 'unpaid' || !s.payment_status ? 'active-unpaid' : ''}" onclick="event.stopPropagation(); if(window.updatePaymentStatus) window.updatePaymentStatus('${s.barcode}', 'unpaid')">لم يدفع 🔴</button>
+                            <button class="f-btn ${s.payment_status === 'exempt' ? 'active-exempt' : ''}" onclick="event.stopPropagation(); if(window.updatePaymentStatus) window.updatePaymentStatus('${s.barcode}', 'exempt')">معفى 🟡</button>
+                        </div>
+
+                        <div class="student-actions-row">
+                            <button class="btn-icon report" onclick="event.stopPropagation(); if(window.openReportModal) window.openReportModal('${s.barcode}')"><i class="fa-solid fa-file-invoice"></i> التقرير</button>
+                            <button class="btn-icon id-card" onclick="event.stopPropagation(); if(window.generateIDCard) window.generateIDCard('${s.barcode}')"><i class="fa-solid fa-id-badge"></i></button>
+                            <button class="btn-icon copy" onclick="event.stopPropagation(); if(window.copyStudentLink) window.copyStudentLink('${s.barcode}', '${s.student_name}')"><i class="fa-solid fa-link"></i></button>
+                            <button class="btn-icon call" onclick="event.stopPropagation(); if(window.makePhoneCall) window.makePhoneCall('${s.parent_phone}')"><i class="fa-solid fa-phone"></i></button>
+                            <button class="btn-icon whatsapp" onclick="event.stopPropagation(); if(window.openWhatsApp) window.openWhatsApp('${s.barcode}', '${s.parent_phone || ''}')"><i class="fa-brands fa-whatsapp"></i></button>
+                            <button class="btn-icon edit" onclick="event.stopPropagation(); if(window.editStudent) window.editStudent('${s.barcode}')"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon freeze" onclick="event.stopPropagation(); if(window.toggleSuspend) window.toggleSuspend('${s.barcode}', ${s.is_suspended})"><i class="fa-solid fa-snowflake"></i></button>
+                            <button class="btn-icon delete" onclick="event.stopPropagation(); if(window.deleteStudent) window.deleteStudent('${s.barcode}', '${s.student_name}')"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>`;
+            });
+            list.innerHTML = htmlContent;
+        };
+
+        window.triggerRender = function() { window.renderStudentsUI(); };
+
+        // جلب البيانات اللحظية من الكاش قبل حتى أن تبدأ الصفحة بالتحميل الفعلي (تمنع الشاشة البيضاء)
+        document.addEventListener("DOMContentLoaded", () => {
+            const cachedAuth = localStorage.getItem('classy_auth_' + currentCenterId);
+            if(cachedAuth) {
+                const data = JSON.parse(cachedAuth);
+                document.getElementById("headerTeacherName").innerText = data.teacher_name || "كيميائي / يحيى الزيادي";
+                if(data.teacher_photo) document.getElementById("headerTeacherPhoto").src = data.teacher_photo;
+                window.centerSupportPhone = data.support_phone || data.phone || "01004999884";
+            }
+
+            const cachedGroups = localStorage.getItem('classy_groups_' + currentCenterId);
+            if(cachedGroups) {
+                window.allGroupsData = JSON.parse(cachedGroups);
+                const filterSelect = document.getElementById("studentGroupFilter");
+                if(filterSelect && window.allGroupsData.length > 0) {
+                    filterSelect.innerHTML = '<option value="">كل المجموعات</option>';
+                    window.allGroupsData.forEach(g => { filterSelect.innerHTML += `<option value="${g.id}">${g.name}</option>`; });
+                }
+            }
+
+            const cachedStudents = localStorage.getItem('classy_students_' + currentCenterId);
+            if(cachedStudents) {
+                window.allStudentsData = JSON.parse(cachedStudents);
+                window.renderStudentsUI(); // ريندر فوري
+            }
+        });
+    </script>
+
+    <!-- محرك Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, deleteDoc, collection, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCPFOwLEjtPWl89wZTbAqQoNVUmIVTkzEI", authDomain: "smart-center-saas-53d3e.firebaseapp.com", projectId: "smart-center-saas-53d3e",
+            storageBucket: "smart-center-saas-53d3e.firebasestorage.app", messagingSenderId: "59706619521", appId: "1:59706619521:web:aba7722ddf2073fceebf80"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        enableIndexedDbPersistence(db).catch((err) => { console.log("Offline Error: ", err.code); });
+
+        function checkNetworkStatus() {
+            const statusDot = document.getElementById('networkStatus');
+            if(navigator.onLine) { statusDot.style.backgroundColor = 'var(--btn-green)'; statusDot.style.border = '2px solid var(--bg-nav)'; statusDot.innerHTML = ''; } 
+            else { statusDot.style.backgroundColor = 'transparent'; statusDot.style.border = 'none'; statusDot.innerHTML = '❤️'; statusDot.style.fontSize = '10px'; }
+        }
+        window.addEventListener('online', checkNetworkStatus);
+        window.addEventListener('offline', checkNetworkStatus);
+        checkNetworkStatus();
+
+        onSnapshot(doc(db, "centers_auth", currentCenterId), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                localStorage.setItem('classy_auth_' + currentCenterId, JSON.stringify(data)); // تحديث الكاش
+                document.getElementById("headerTeacherName").innerText = data.teacher_name || "كيميائي / يحيى الزيادي";
+                if(data.teacher_photo) document.getElementById("headerTeacherPhoto").src = data.teacher_photo;
+                window.centerSupportPhone = data.support_phone || data.phone || "01004999884";
+            }
+        });
+
+        window.formatTime12h = function(time24) { if(!time24) return ''; let [h, m] = time24.split(':'); let ampm = h >= 12 ? 'م' : 'ص'; h = h % 12 || 12; return `${h}:${m} ${ampm}`; }
+
+        onSnapshot(collection(db, "centers", currentCenterId, "groups"), (snap) => {
+            window.allGroupsData = [];
+            const filterSelect = document.getElementById("studentGroupFilter");
+            filterSelect.innerHTML = '<option value="">كل المجموعات</option>';
+            
+            snap.forEach(d => {
+                const data = d.data();
+                let schedText = 'غير محدد';
+                if (data.schedules && Array.isArray(data.schedules)) { schedText = data.schedules.map(sch => `${sch.day} ${window.formatTime12h(sch.time)}`).join(' | '); } 
+                else if (data.days && Array.isArray(data.days)) { schedText = data.days.map(dayObj => typeof dayObj === 'object' ? `${dayObj.day} ${dayObj.time}` : dayObj).join(' | '); } 
+                else if (data.schedule && Array.isArray(data.schedule)) { schedText = data.schedule.join(' | '); } 
+                else if (typeof data.schedule === 'string') { schedText = data.schedule; } 
+                else if (data.group_days && Array.isArray(data.group_days)) { schedText = data.group_days.join(' | '); }
+                
+                window.allGroupsData.push({ id: d.id, name: data.group_name, schedule: schedText });
+                filterSelect.innerHTML += `<option value="${d.id}">${data.group_name}</option>`;
+            });
+            localStorage.setItem('classy_groups_' + currentCenterId, JSON.stringify(window.allGroupsData)); 
+            window.renderStudentsUI();
+        });
+
+        window.openRegisterStudent = async function() {
+            const autoCode = Math.floor(1000 + Math.random() * 9000); 
+            let gOpts = window.allGroupsData.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+            
+            const { value: f } = await Swal.fire({
+                title: 'تسجيل طالب جديد',
+                html: `
+                    <div class="swal-form-group"><label>اسم الطالب بالكامل:</label><input id="s-name" placeholder="الاسم الثلاثي"></div>
+                    <div class="swal-form-row"><div class="swal-form-col"><div class="swal-form-group"><label>رقم ولي الأمر:</label><input id="s-phone" type="tel" placeholder="010XXXXXXXX"></div></div><div class="swal-form-col"><div class="swal-form-group"><label>النوع:</label><select id="s-gender"><option value="ذكر" selected>ذكر 👦</option><option value="أنثى">أنثى 👧</option></select></div></div></div>
+                    <div class="swal-form-group"><label>المجموعة المستهدفة:</label><select id="s-group"><option value="">-- اختر مجموعة --</option>${gOpts}</select></div>
+                    <div class="swal-form-group"><label>كود الدخول العشوائي:</label><input id="s-code" value="${autoCode}" readonly style="background:rgba(0,0,0,0.3); color:var(--btn-orange); text-align:center; font-weight:900; letter-spacing:5px;"></div>
+                    <div class="swal-form-row"><div class="swal-form-col"><div class="swal-form-group"><label>نظام الدفع:</label><select id="s-subType"><option value="monthly" selected>شهري</option></select></div></div><div class="swal-form-col"><div class="swal-form-group"><label>القيمة (جنية):</label><input id="s-subVal" type="number" placeholder="القيمة"></div></div></div>
+                `,
+                showCancelButton: true, confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> حفظ', cancelButtonText: 'إلغاء', confirmButtonColor: '#10b981',
+                preConfirm: () => {
+                    const name = document.getElementById('s-name').value.trim(); const grp = document.getElementById('s-group');
+                    if(!name) { Swal.showValidationMessage('الاسم مطلوب!'); return false; }
+                    return { student_name: name, parent_phone: document.getElementById('s-phone').value.trim(), gender: document.getElementById('s-gender').value, barcode: document.getElementById('s-code').value, group_id: grp.value, group_name: grp.options[grp.selectedIndex]?.text, sub_type: document.getElementById('s-subType').value, sub_val: document.getElementById('s-subVal').value || "0", payment_status: "unpaid", payment_month: "", is_suspended: false, wallet_balance: 0, absence_count: 0, last_attend_date: "", last_absent_date: "", expenses: [], created_at: new Date().toISOString() }
+                }
+            });
+            if (f) { try { await setDoc(doc(db, "centers", currentCenterId, "students", f.barcode), f); Swal.fire({ title: 'تم التسكين!', icon: 'success', timer: 1500, showConfirmButton: false }); } catch(e) { Swal.fire('خطأ', 'فشل الاتصال', 'error'); } }
+        }
+
+        onSnapshot(collection(db, "centers", currentCenterId, "students"), (snap) => {
+            const currentMonthStr = new Date().getFullYear() + '-' + (new Date().getMonth() + 1);
+            window.allStudentsData = [];
+            let needsAutoReset = [];
+
+            snap.forEach(d => {
+                let data = d.data();
+                if (data.payment_status === 'paid' && data.payment_month !== currentMonthStr) { data.payment_status = 'unpaid'; needsAutoReset.push(d.id); }
+                window.allStudentsData.push({ id: d.id, ...data });
+            });
+
+            if (needsAutoReset.length > 0) { needsAutoReset.forEach(code => { updateDoc(doc(db, "centers", currentCenterId, "students", code), { payment_status: 'unpaid' }); }); }
+            localStorage.setItem('classy_students_' + currentCenterId, JSON.stringify(window.allStudentsData)); 
+            window.renderStudentsUI();
+        });
+
+        window.setFinFilter = function(status) {
+            window.currentFinFilter = status;
+            document.querySelectorAll('.fin-filter-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('f-' + status).classList.add('active');
+            window.renderStudentsUI();
+        }
+
+        window.openScanner = function() { document.getElementById('scannerOverlay').style.display = 'flex'; setTimeout(() => { document.getElementById('liveScannerInput').focus(); }, 100); }
+        window.closeScanner = function() { document.getElementById('scannerOverlay').style.display = 'none'; document.getElementById('liveScannerInput').value = ''; }
+        window.checkAutoScan = function(input) { const code = input.value.trim(); if (code.length === 4) { input.value = ''; executeScanLogic(code); } }
+
+        async function executeScanLogic(code) {
+            const student = window.allStudentsData.find(s => s.barcode === code);
+            const todayStr = new Date().toLocaleDateString('en-GB');
+            if (student) {
+                if(student.is_suspended) { Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: `❌ ${student.student_name} (مجمد)`, showConfirmButton: false, timer: 3000 }); return; }
+                if(student.last_attend_date === todayStr) { Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: `⚠️ مسجل حضور مسبقاً`, showConfirmButton: false, timer: 2000 }); return; }
+                let updates = { absence_count: 0, last_attend_date: todayStr, last_absent_date: "" };
+                if(student.last_absent_date === todayStr) { updates.absence_count = Math.max(0, (student.absence_count || 0) - 1); }
+                updateDoc(doc(db, "centers", currentCenterId, "students", code), updates);
+                let statusMsg = student.payment_status === 'paid' ? 'دفع 🟢' : (student.payment_status === 'exempt' ? 'معفى 🟡' : 'لم يدفع 🔴');
+                let iconType = student.payment_status === 'paid' || student.payment_status === 'exempt' ? 'success' : 'warning';
+                Swal.fire({ toast: true, position: 'top-end', icon: iconType, title: `✅ تم حضور: ${student.student_name}\nالمالية: ${statusMsg}`, showConfirmButton: false, timer: 2000 });
+            } else { Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: `❌ كود (${code}) غير مسجل!`, showConfirmButton: false, timer: 2000 }); }
+        }
+
+        window.endSession = async function() {
+            let gOpts = window.allGroupsData.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+            const todayStr = new Date().toLocaleDateString('en-GB');
+            const { value: selectedGroup } = await Swal.fire({
+                title: 'إنهاء الجلسة',
+                html: `<p style="font-size:12px; color:var(--text-muted);">سيتم احتساب غياب للطلاب <b>الذين لم يحضروا اليوم</b> فقط.</p><select id="end-session-group" class="form-input" style="padding:8px;"><option value="all">-- كل المجموعات --</option>${gOpts}</select>`,
+                icon: 'warning', showCancelButton: true, confirmButtonText: 'تأكيد سريع', cancelButtonText: 'إلغاء', confirmButtonColor: '#ef4444', preConfirm: () => { return document.getElementById('end-session-group').value; }
+            });
+            if(selectedGroup) {
+                closeScanner(); Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'تم الإنهاء! جاري التسجيل بالخلفية 🚀', timer: 3000, showConfirmButton: false });
+                setTimeout(async () => {
+                    let targetStudents = window.allStudentsData; if (selectedGroup !== 'all') { targetStudents = targetStudents.filter(s => s.group_id === selectedGroup); }
+                    for (let s of targetStudents) { if (s.last_attend_date !== todayStr && s.last_absent_date !== todayStr && !s.is_suspended) { await updateDoc(doc(db, "centers", currentCenterId, "students", s.barcode), { absence_count: (s.absence_count || 0) + 1, last_absent_date: todayStr }); } }
+                }, 50); 
+            }
+        }
+
+        window.generateIDCard = function(code) {
+            const s = window.allStudentsData.find(x => x.barcode === code); if(!s) return;
+            let gInfo = window.allGroupsData.find(g => g.id === s.group_id); let scheduleText = gInfo ? gInfo.schedule : 'غير محدد'; let styledSchedule = scheduleText;
+            if(scheduleText && scheduleText !== 'غير محدد') { styledSchedule = scheduleText.split('|').map(part => { let words = part.trim().split(' '); let day = words.shift(); let time = words.join(' '); return `<span style="color:#1e293b; font-weight:900;">${day}</span> <span style="color:var(--btn-blue); direction:ltr; display:inline-block;">${time}</span>`; }).join(' <span style="color:#cbd5e1; margin:0 5px;">|</span> '); }
+            let teacherName = document.getElementById("headerTeacherName").innerText; let centerName = document.getElementById("headerCenterName").innerText; let avatar = s.gender === 'أنثى' ? '👩‍🎓' : '👨‍🎓';
+            Swal.fire({
+                title: 'كارنيه الطالب',
+                html: `<div id="print-card-area" style="background:#fff; color:#000; padding:20px; border-radius:15px; border:4px solid var(--btn-blue); text-align:center; max-width:320px; margin:auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position:relative; overflow:hidden;"><div style="background:var(--btn-blue); color:white; margin:-20px -20px 15px -20px; padding:15px 10px;"><h4 style="margin:0; font-weight:900; font-size:16px;">${teacherName}</h4><p style="margin:0; font-size:11px; opacity:0.9;">${centerName}</p></div><div style="font-size:40px; margin-bottom:10px;">${avatar}</div><h3 style="margin:0 0 5px 0; color:#1e293b; font-weight:900; font-size:18px;">${s.student_name}</h3><p style="margin:0 0 5px 0; font-weight:800; color:var(--btn-orange); font-size:15px;">${s.group_name || 'بدون مجموعة'}</p><div style="background:#f1f5f9; border-radius:8px; padding:10px; margin:10px 0; font-size:13px; font-weight:700; color:#334155; line-height:1.6;"><i class="fa-solid fa-clock" style="color:var(--text-muted);"></i> المواعيد: <br> ${styledSchedule}</div><svg id="barcode-canvas"></svg><p style="margin:5px 0 0 0; font-size:16px; font-weight:900; color:#000; letter-spacing:3px;">${s.barcode}</p></div>`,
+                showCancelButton: true, showDenyButton: true, confirmButtonText: '<i class="fa-solid fa-print"></i>', denyButtonText: '<i class="fa-brands fa-whatsapp"></i>', cancelButtonText: 'إغلاق', denyButtonColor: '#25D366',
+                didOpen: () => { JsBarcode("#barcode-canvas", s.barcode, { format: "CODE128", lineColor: "#000", width: 2.5, height: 50, displayValue: false }); },
+                preDeny: () => {
+                    let phone = s.parent_phone || s.phone || "";
+                    let msg = encodeURIComponent(`السيد ولي الأمر المحترم،\nنرفق لسيادتكم صورة كارنيه الدخول الخاص بالطالب/ة: *${s.student_name}*\nبرجاء الاحتفاظ بالصورة لتسهيل عملية الدخول.\n\nللتواصل والدعم: ${window.centerSupportPhone}`);
+                    if(phone) { window.open(`https://wa.me/2${phone}?text=${msg}`, '_blank'); } else { Swal.fire({toast:true, position:'top', icon:'warning', title:'لا يوجد رقم هاتف!', showConfirmButton:false, timer:2000}); } return false; 
+                }
+            }).then((res) => { if (res.isConfirmed) { const printContent = document.getElementById('print-card-area').outerHTML; const originalContent = document.body.innerHTML; document.body.innerHTML = `<div style="display:flex; justify-content:center; align-items:center; height:100vh; background:white;">${printContent}</div>`; window.print(); document.body.innerHTML = originalContent; location.reload(); } });
+        }
+
+        window.openReportModal = function(code) {
+            const s = window.allStudentsData.find(st => st.barcode === code); window.activeReportCode = code; document.getElementById('reportStudentName').innerText = `ملف: ${s.student_name}`;
+            let expList = s.expenses && s.expenses.length > 0 ? s.expenses.map((e, index) => `<li style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:rgba(255,255,255,0.05); border-radius:8px; margin-bottom:5px;"><div><i class="fa-solid fa-cart-shopping" style="color:var(--btn-blue); margin-left:5px;"></i> ${e.item} <br><span style="color:var(--text-muted); font-size:10px;">${e.date}</span></div> <div style="display:flex; align-items:center; gap:12px;"><strong style="color:var(--btn-red);">- ${e.cost} ج</strong><button class="mini-btn" style="background:transparent; border:none; color:var(--text-muted); font-size:16px; padding:0;" onclick="deleteExpense(${index})"><i class="fa-solid fa-trash-can hover-red"></i></button></div></li>`).join('') : '<li style="text-align:center; color:var(--text-muted); font-size:12px; padding:10px;">لا يوجد مذكرات.</li>';
+            const todayStr = new Date().toLocaleDateString('en-GB'); let attendStatusText = '<span style="color:var(--text-muted); font-weight:bold;"><i class="fa-solid fa-circle-minus"></i> لم يسجل اليوم</span>'; if (s.last_attend_date === todayStr) { attendStatusText = '<span style="color:var(--btn-green); font-weight:bold;"><i class="fa-solid fa-check-circle"></i> حاضر اليوم</span>'; } else if (s.last_absent_date === todayStr) { attendStatusText = '<span style="color:var(--btn-red); font-weight:bold;"><i class="fa-solid fa-times-circle"></i> غائب اليوم</span>'; }
+            document.getElementById('reportContent').innerHTML = `<style> .hover-red:hover { color: var(--btn-red); } </style><div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;"><div style="background:linear-gradient(135deg, #1e293b, #0f172a); border:1px solid var(--border); padding:10px; border-radius:12px; text-align:center;"><i class="fa-solid fa-wallet" style="font-size:20px; color:var(--btn-green); margin-bottom:8px;"></i><h5 style="margin:0; font-size:11px; color:var(--text-muted);">المحفظة</h5><div style="font-size:18px; font-weight:900; color:${s.wallet_balance < 0 ? '#ef4444' : '#10b981'}; margin:5px 0;">${s.wallet_balance || 0} ج</div><div style="display:flex; justify-content:center; gap:5px;"><button class="mini-btn" style="background:var(--btn-orange); border:none; color:black; font-weight:bold;" onclick="customWallet()"><i class="fa-solid fa-pen"></i></button><button class="mini-btn" style="background:var(--btn-red); border:none; font-weight:bold;" onclick="resetWallet()"><i class="fa-solid fa-ban"></i></button></div></div><div style="background:linear-gradient(135deg, #1e293b, #0f172a); border:1px solid var(--border); padding:10px; border-radius:12px; text-align:center;"><i class="fa-solid fa-user-clock" style="font-size:20px; color:var(--btn-red); margin-bottom:8px;"></i><h5 style="margin:0; font-size:11px; color:var(--text-muted);">الغياب المتتالي</h5><div style="font-size:18px; font-weight:900; color:#ef4444; margin:5px 0;">${s.absence_count || 0}</div><div style="display:flex; justify-content:center; gap:5px;"><button class="mini-btn" style="background:var(--btn-red); border:none;" onclick="updateAbsence(1)">+1</button><button class="mini-btn" style="background:var(--btn-gray); border:none;" onclick="resetAbsence()"><i class="fa-solid fa-rotate-left"></i></button></div></div></div><div style="background:var(--bg-dark); border:1px solid var(--border); border-radius:12px; padding:15px; margin-bottom:15px;"><h4 style="margin:0 0 10px 0; color:var(--btn-cyan); font-size:13px;"><i class="fa-solid fa-info-circle"></i> حالة الحضور</h4><div style="font-size:13px; background:rgba(255,255,255,0.03); padding:10px; border-radius:8px; border:1px dashed var(--border);">${attendStatusText} <br><span style="font-size:10px; color:var(--text-muted); display:inline-block; margin-top:5px;">أخر حضور: ${s.last_attend_date || 'غير مسجل'}</span></div></div><div style="background:var(--bg-dark); border:1px solid var(--border); border-radius:12px; padding:15px;"><h4 style="margin:0 0 10px 0; color:var(--btn-purple); font-size:13px;"><i class="fa-solid fa-book"></i> المذكرات والمصاريف</h4><div style="display:flex; gap:5px; margin-bottom:10px; background:rgba(0,0,0,0.2); padding:8px; border-radius:8px;"><input type="text" id="newExpName" class="form-input" placeholder="المذكرة..." style="padding:6px; font-size:11px;"><input type="number" id="newExpCost" class="form-input" placeholder="جنية" style="width:60px; padding:6px; font-size:11px;"><button class="mini-btn" style="background:var(--btn-purple); border:none; padding:0 12px;" onclick="addNewExpense()"><i class="fa-solid fa-plus"></i></button></div><ul style="margin:0; padding:0; list-style:none; max-height:150px; overflow-y:auto;">${expList}</ul></div>`;
+            document.getElementById('reportOverlay').style.display = 'flex'; setTimeout(() => document.getElementById('reportModal').classList.add('open'), 10);
+        }
+        window.closeReportModal = function() { document.getElementById('reportModal').classList.remove('open'); setTimeout(() => document.getElementById('reportOverlay').style.display = 'none', 300); }
+        window.customWallet = async function() { const s = window.allStudentsData.find(st => st.barcode === window.activeReportCode); const {value: v} = await Swal.fire({ title: 'تعديل المحفظة', input: 'number', inputValue: s.wallet_balance || 0, showCancelButton: true }); if(v !== undefined && v !== null && v !== "") { await updateDoc(doc(db, "centers", currentCenterId, "students", window.activeReportCode), { wallet_balance: Number(v) }); openReportModal(window.activeReportCode); } }
+        window.resetWallet = async function() { await updateDoc(doc(db, "centers", currentCenterId, "students", window.activeReportCode), { wallet_balance: 0 }); openReportModal(window.activeReportCode); }
+        window.addNewExpense = async function() { const name = document.getElementById('newExpName').value.trim(); const cost = Number(document.getElementById('newExpCost').value); if(!name || !cost) return; const s = window.allStudentsData.find(st => st.barcode === window.activeReportCode); let exps = s.expenses || []; exps.push({ item: name, cost: cost, date: new Date().toLocaleDateString('en-GB') }); let newBalance = (s.wallet_balance || 0) - cost; await updateDoc(doc(db, "centers", currentCenterId, "students", window.activeReportCode), { expenses: exps, wallet_balance: newBalance }); openReportModal(window.activeReportCode); }
+        window.deleteExpense = async function(index) { Swal.fire({ title: 'حذف؟', text: 'استرجاع القيمة؟', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' }).then(async (result) => { if (result.isConfirmed) { const s = window.allStudentsData.find(st => st.barcode === window.activeReportCode); let exps = s.expenses || []; if (index >= 0 && index < exps.length) { let costToReturn = exps[index].cost; exps.splice(index, 1); let newBalance = (s.wallet_balance || 0) + costToReturn; await updateDoc(doc(db, "centers", currentCenterId, "students", window.activeReportCode), { expenses: exps, wallet_balance: newBalance }); openReportModal(window.activeReportCode); } } }); }
+        window.updateAbsence = async function(val) { const s=window.allStudentsData.find(x=>x.barcode===window.activeReportCode); await updateDoc(doc(db,"centers",currentCenterId,"students",window.activeReportCode),{absence_count: (s.absence_count||0)+val}); openReportModal(window.activeReportCode); }
+        window.resetAbsence = async function() { await updateDoc(doc(db,"centers",currentCenterId,"students",window.activeReportCode),{absence_count: 0}); openReportModal(window.activeReportCode); }
+
+        window.copyAllNumbers = function() { if(!window.currentFilteredData || window.currentFilteredData.length === 0) return Swal.fire('تنبيه', 'لا يوجد بيانات!', 'warning'); let numbersArray = window.currentFilteredData.map(s => s.parent_phone).filter(p => p && p.trim() !== ""); if(numbersArray.length === 0) return Swal.fire('تنبيه', 'لا توجد أرقام!', 'info'); let numbersText = numbersArray.join('\n'); navigator.clipboard.writeText(numbersText).then(() => { Swal.fire('تم النسخ! 📱', `تم نسخ (${numbersArray.length}) رقم.`, 'success'); }).catch(() => { prompt("انسخ الأرقام:", numbersText); }); }
+        window.exportToCSV = function() { if(!window.currentFilteredData || window.currentFilteredData.length === 0) return Swal.fire('تنبيه', 'لا يوجد بيانات!', 'info'); let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; csvContent += "الكود,الاسم,النوع,رقم الهاتف,معرف المجموعة,اسم المجموعة,نظام الدفع,القيمة,الحالة المالية,الغياب,المحفظة,حساب مجمد,سبب الإعفاء\n"; window.currentFilteredData.forEach(s => { let sName = (s.student_name || '').replace(/,/g, ' '); let sPhone = (s.parent_phone || '').replace(/,/g, ''); let sGrp = (s.group_name || '').replace(/,/g, ' '); let sRea = (s.exemption_reason || '').replace(/,/g, ' '); let row = `${s.barcode},${sName},${s.gender||'ذكر'},${sPhone},${s.group_id||''},${sGrp},${s.sub_type||'monthly'},${s.sub_val||0},${s.payment_status||'unpaid'},${s.absence_count||0},${s.wallet_balance||0},${s.is_suspended||false},${sRea}`; csvContent += row + "\r\n"; }); const encodedUri = encodeURI(csvContent); const link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", `طلاب_${new Date().toLocaleDateString('ar-EG')}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+        window.importFromCSV = function(event) { const file = event.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = async function(e) { const text = e.target.result; const rows = text.split('\n').map(r => r.trim()).filter(r => r); if(rows.length <= 1) return Swal.fire('خطأ', 'الملف غير صالح', 'error'); Swal.fire({title: 'جاري الاستيراد... ⏳', allowOutsideClick: false, didOpen: () => Swal.showLoading()}); let count = 0; for(let i = 1; i < rows.length; i++) { const cols = rows[i].split(','); if(cols.length < 10) continue; const data = { barcode: cols[0], student_name: cols[1], gender: cols[2], parent_phone: cols[3], group_id: cols[4], group_name: cols[5], sub_type: cols[6], sub_val: cols[7], payment_status: cols[8], payment_month: "", absence_count: Number(cols[9]||0), wallet_balance: Number(cols[10]||0), is_suspended: cols[11] === 'true', exemption_reason: cols[12] || '', created_at: new Date().toISOString() }; await setDoc(doc(db, "centers", currentCenterId, "students", data.barcode), data); count++; } event.target.value = ''; Swal.fire('تم الاستيراد! 🎉', `تم استيراد ${count} طالب.`, 'success'); }; reader.readAsText(file); }
+
+        window.openWhatsApp = function(code, phone) {
+            const s = window.allStudentsData.find(x => x.barcode === code);
+            let msg = encodeURIComponent(`مرحباً ولي أمر الطالب/ة: *${s.student_name}*\n\nللتواصل والدعم: ${window.centerSupportPhone}`);
+            if(phone) { window.open(`https://wa.me/2${phone}?text=${msg}`, '_blank'); } else { Swal.fire('عفواً', 'لا يوجد رقم', 'warning'); }
+        }
+        window.makePhoneCall = function(phone) { if(phone) window.open(`tel:${phone}`); else Swal.fire('عفواً', 'لا يوجد رقم', 'warning'); }
+        
+        window.updatePaymentStatus = async function(code, newStatus) {
+            let updateData = { payment_status: newStatus };
+            if (newStatus === 'paid') { updateData.payment_month = new Date().getFullYear() + '-' + (new Date().getMonth() + 1); }
+            if (newStatus === 'exempt') { const { value: r } = await Swal.fire({ title: 'سبب الإعفاء:', input: 'text', showCancelButton: true }); if(r) updateData.exemption_reason = r; else return; }
+            await updateDoc(doc(db, "centers", currentCenterId, "students", code), updateData);
+        }
+
+        window.copyStudentLink = function(code, name) { const l = window.location.origin + '/parent-portal.html?code=' + code; navigator.clipboard.writeText(`الطالب: ${name}\nالكود: ${code}\nالرابط: ${l}`).then(()=>Swal.fire({toast:true, position:'top', icon:'success', title:'تم النسخ', showConfirmButton:false, timer:1500})); }
+        
+        window.editStudent = async function(code) {
+            const s = window.allStudentsData.find(x => x.barcode === code);
+            let gOpts = window.allGroupsData.map(g => `<option value="${g.id}" ${g.id === s.group_id ? 'selected' : ''}>${g.name}</option>`).join('');
+            const { value: f } = await Swal.fire({
+                title: 'تعديل بيانات الطالب',
+                html: `<div class="swal-form-group"><label>اسم الطالب:</label><input id="e-name" value="${s.student_name}"></div><div class="swal-form-row"><div class="swal-form-col"><div class="swal-form-group"><label>رقم ولي الأمر:</label><input id="e-phone" type="tel" value="${s.parent_phone || ''}"></div></div><div class="swal-form-col"><div class="swal-form-group"><label>النوع:</label><select id="e-gender"><option value="ذكر" ${s.gender==='ذكر'?'selected':''}>ذكر 👦</option><option value="أنثى" ${s.gender==='أنثى'?'selected':''}>أنثى 👧</option></select></div></div></div><div class="swal-form-group"><label>المجموعة:</label><select id="e-group"><option value="">- بدون -</option>${gOpts}</select></div><div class="swal-form-row"><div class="swal-form-col"><div class="swal-form-group"><label>الدفع:</label><select id="e-subType"><option value="monthly" ${s.sub_type === 'monthly' ? 'selected' : ''}>شهري</option></select></div></div><div class="swal-form-col"><div class="swal-form-group"><label>القيمة:</label><input id="e-subVal" type="number" value="${s.sub_val}"></div></div></div>`,
+                showCancelButton: true, confirmButtonText: 'حفظ', confirmButtonColor: '#3b82f6',
+                preConfirm: () => { const grp = document.getElementById('e-group'); return { student_name: document.getElementById('e-name').value, gender: document.getElementById('e-gender').value, parent_phone: document.getElementById('e-phone').value, group_id: grp.value, group_name: grp.options[grp.selectedIndex]?.text || "", sub_type: document.getElementById('e-subType').value, sub_val: document.getElementById('e-subVal').value } }
+            });
+            if(f && f.student_name) await updateDoc(doc(db, "centers", currentCenterId, "students", code), f);
+        }
+        
+        window.toggleSuspend = async function(c, state) { Swal.fire({title:'تأكيد', text:state?'إلغاء التجميد؟':'تجميد الحساب؟', showCancelButton:true}).then(async r=>{if(r.isConfirmed) await updateDoc(doc(db,"centers",currentCenterId,"students",c),{is_suspended: !state})}); }
+        window.deleteStudent = function(c, n) { Swal.fire({ title: 'تأكيد الحذف', text: `مسح ملف (${n}) نهائياً!`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' }).then(async r => { if(r.isConfirmed) await deleteDoc(doc(db, "centers", currentCenterId, "students", c)); }); }
+        window.bulkDeleteStudents = function() { const q=document.getElementById("studentSearchInput").value; const grp=document.getElementById("studentGroupFilter").value; if(!q && !grp && window.currentFinFilter === 'all') return Swal.fire('تنبيه', 'فلتر الطلاب أولاً!', 'warning'); Swal.fire({title:'الحذف الجماعي', text:'مسح المعروضين فقط؟', icon:'warning', showCancelButton:true, confirmButtonColor:'#ef4444'}).then(r=>{if(r.isConfirmed){ window.currentFilteredData.forEach(s=>deleteDoc(doc(db,"centers",currentCenterId,"students",s.barcode))); }}) }
+        
+        window.logoutCenter = () => { sessionStorage.clear(); localStorage.clear(); window.location.href="index.html"; };
+    </script>
+</body>
+</html>

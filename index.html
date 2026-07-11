@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة إدارة السناتر - تسجيل الدخول</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; margin: 0; padding: 0; }
+        /* تحويل الخلفية للون داكن فخم يتماشى مع الـ SaaS */
+        body { background-color: #0f172a; display: flex; justify-content: center; align-items: center; height: 100vh; padding: 15px; }
+        
+        .login-card { 
+            background: #1e293b; 
+            padding: 40px; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
+            width: 100%; 
+            max-width: 420px; 
+            border: 1px solid #334155;
+        }
+        
+        h2 { text-align: center; color: #f8fafc; margin-bottom: 15px; font-size: 26px; font-weight: 800; }
+        .subtitle { text-align: center; color: #94a3b8; margin-bottom: 30px; font-size: 14px; font-weight: 600; }
+        
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; margin-bottom: 8px; color: #cbd5e1; font-weight: bold; font-size: 14px; }
+        .input-group input { 
+            width: 100%; 
+            padding: 14px; 
+            background-color: #0f172a;
+            border: 1px solid #334155; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            color: white;
+            outline: none; 
+            transition: 0.3s;
+        }
+        .input-group input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+        
+        /* تنسيقات أيقونة العين */
+        .password-wrapper { position: relative; }
+        .password-wrapper input { padding-left: 45px; /* لمنع تداخل النص مع الأيقونة */ }
+        .toggle-password {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.3s;
+        }
+        .toggle-password:hover svg { stroke: #cbd5e1; }
+
+        .login-btn { 
+            width: 100%; 
+            padding: 14px; 
+            background-color: #3b82f6; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 18px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: background 0.3s; 
+            margin-top: 10px; 
+        }
+        .login-btn:hover { background-color: #2563eb; }
+        
+        .developer-badge { text-align: center; margin-top: 25px; font-size: 13px; color: #64748b; border-top: 1px solid #334155; padding-top: 15px; font-weight: 600; }
+        
+        /* تنسيق خطوط SweetAlert */
+        div:where(.swal2-container) div:where(.swal2-popup) { background-color: #1e293b; border: 1px solid #334155; }
+        .swal2-title, .swal2-html-container { font-family: 'Cairo', sans-serif !important; color: #f8fafc !important; }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <h2>تسجيل الدخول</h2>
+        <div class="subtitle">نظام إدارة السناتر التعليمية - SaaS</div>
+        
+        <div class="input-group">
+            <label>كود / معرف السنتر (ID)</label>
+            <input type="text" id="centerId" placeholder="مثال: center_01" autofocus autocomplete="off">
+        </div>
+        <div class="input-group">
+            <label>كلمة المرور</label>
+            <div class="password-wrapper">
+                <input type="password" id="centerPassword" placeholder="••••••••">
+                <span class="toggle-password" onclick="togglePassword()">
+                    <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                </span>
+            </div>
+        </div>
+        
+        <button class="login-btn" onclick="loginAndRedirect()">دخول النظام</button>
+        
+        <div class="developer-badge">تطوير وبرمجة: كيميائي / يحيى علي الزيادي</div>
+    </div>
+
+    <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById("centerPassword");
+            const eyeIcon = document.getElementById("eyeIcon");
+            
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                // تغيير الأيقونة لعين عليها خط (مخفية)
+                eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+            } else {
+                passwordInput.type = "password";
+                // تغيير الأيقونة للعين المفتوحة
+                eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+            }
+        }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCPFOwLEjtPWl89wZTbAqQoNVUmIVTkzEI",
+            authDomain: "smart-center-saas-53d3e.firebaseapp.com",
+            projectId: "smart-center-saas-53d3e",
+            storageBucket: "smart-center-saas-53d3e.firebasestorage.app",
+            messagingSenderId: "59706619521",
+            appId: "1:59706619521:web:aba7722ddf2073fceebf80"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app); 
+
+        window.loginAndRedirect = async function() {
+            const enteredId = document.getElementById("centerId").value.trim();
+            const enteredPass = document.getElementById("centerPassword").value.trim();
+
+            if(!enteredId || !enteredPass) {
+                Swal.fire('تنبيه!', 'برجاء إدخال كود السنتر وكلمة المرور.', 'warning');
+                return;
+            }
+
+            const loginEmail = enteredId + "@system.com";
+
+            Swal.fire({title: 'جاري التحقق...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+
+            try {
+                // 1. تسجيل الدخول الرسمي الموثق
+                await signInWithEmailAndPassword(auth, loginEmail, enteredPass);
+
+                // 2. التحقق من التجميد والاشتراك بعد الدخول
+                const centerRef = doc(db, "centers_auth", enteredId);
+                const centerSnap = await getDoc(centerRef);
+
+                if (centerSnap.exists()) {
+                    const data = centerSnap.data();
+                    
+                    if (data.is_active === false) {
+                        await signOut(auth); // طرد فوري
+                        Swal.fire({ icon: 'error', title: 'حساب مُعلق 🛑', text: 'عفواً، هذا الحساب تم إيقافه.', confirmButtonText: 'حسناً' });
+                        return; 
+                    }
+
+                    if (data.expiry_date) {
+                        const today = new Date().toISOString().split('T')[0];
+                        if (data.expiry_date < today) {
+                            await signOut(auth); // طرد فوري
+                            Swal.fire({ icon: 'warning', title: 'انتهى الاشتراك ⏰', html: `عفواً، لقد انتهى اشتراك هذا السنتر بتاريخ <b>${data.expiry_date}</b>.`, confirmButtonText: 'موافق', confirmButtonColor: '#f59e0b' });
+                            return; 
+                        }
+                    }
+
+                    // الدخول ناجح 100%
+                    Swal.close();
+                    sessionStorage.setItem("activeCenterId", enteredId);
+                    window.location.href = "dashboard.html";
+                } else {
+                    await signOut(auth);
+                    throw new Error("بيانات السنتر غير موجودة.");
+                }
+            } catch (error) {
+                const adminPhone = "01004999884";
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'خطأ بالدخول',
+                    html: `اسم المستخدم أو كلمة المرور خطأ.<br>من فضلك تواصل مع المبرمج:<br><br><b style="color:#3b82f6; font-size:18px; letter-spacing:2px; direction:ltr; display:inline-block;">${adminPhone}</b>`,
+                    confirmButtonText: 'حسناً',
+                    confirmButtonColor: '#ef4444'
+                });
+            }
+        }
+    </script>
+</body>
+</html>

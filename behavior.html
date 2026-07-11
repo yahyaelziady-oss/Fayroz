@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>رصد السلوك - منظومة الإدارة السحابية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- سكربت التحميل الفوري لمنع التأخير في التنقل -->
+    <script>
+        const currentCenterId = sessionStorage.getItem("activeCenterId");
+        if (!currentCenterId) { window.location.href = "index.html"; }
+    </script>
+
+    <style>
+        :root {
+            --bg-dark: #121826; --bg-nav: #1e2532; --text-main: #ffffff; --text-muted: #cbd5e1; 
+            --btn-blue: #3b82f6; --btn-purple: #7c3aed; --btn-orange: #f59e0b;
+            --btn-green: #10b981; --btn-red: #ef4444; --btn-cyan: #0ea5e9; --btn-gray: #475569;
+            --border: #334155; --card-bg: #1a1f2c;
+        }
+
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-main); max-width: 500px; margin: 0 auto; min-height: 100vh; position: relative; padding-bottom: 80px; overflow-x: hidden; }
+
+        /* الهيدر الموحد */
+        .top-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .header-right { display: flex; align-items: center; gap: 10px; }
+        .menu-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--btn-purple); min-width: 32px; height: 32px; border-radius: 8px; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        .profile-pic { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--btn-purple); }
+        .net-status { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; border-radius: 50%; background-color: var(--btn-green); border: 2px solid var(--bg-nav); z-index: 10; display: flex; justify-content: center; align-items: center;}
+        
+        .profile-info { display: flex; flex-direction: column; justify-content: center; text-align: right;}
+        .profile-info h1 { font-size: 13px; font-weight: 800; color: #ffffff; margin-bottom: 0;}
+        .profile-info p { font-size: 9px; color: var(--text-muted); font-weight: 600; margin:0;}
+
+        /* أزرار الهيدر */
+        .header-actions-row { display: flex; gap: 6px; padding: 0 12px; margin-top: 8px; }
+        .honor-board-btn { flex: 2; background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #000; border: none; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 900; display: flex; justify-content: center; align-items: center; gap: 4px; cursor: pointer; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);}
+
+        /* الفلاتر */
+        .filters-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; margin: 8px 12px; padding: 8px; }
+        .form-input { width: 100%; padding: 6px 10px; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: white; font-size: 11px; outline: none; font-family: 'Cairo';}
+        .form-input:focus { border-color: var(--btn-purple); }
+        
+        .ghost-filter-btn { width: 100%; background: rgba(239, 68, 68, 0.1); border: 1px dashed var(--btn-red); color: #ffffff; padding: 6px; border-radius: 6px; font-weight: bold; font-size: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px;}
+        .ghost-filter-btn.active { background: var(--btn-red); color: white; border-style: solid;}
+        .clear-records-btn { width: 100%; margin-top: 6px; background: rgba(245, 158, 11, 0.15); border: 1px solid var(--btn-orange); color: var(--btn-orange); padding: 6px; border-radius: 6px; font-weight: bold; font-size: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px;}
+
+        /* شريط الإنجاز */
+        .progress-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; margin: 0 12px 8px 12px; padding: 8px;}
+        .progress-header { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 10px; font-weight: 800;}
+        .progress-track { width: 100%; height: 5px; background: var(--bg-dark); border-radius: 10px; overflow: hidden; margin-bottom: 6px;}
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--btn-purple), var(--btn-blue)); border-radius: 10px; width: 0%; transition: width 0.5s;}
+        .progress-stats { display: flex; justify-content: space-between; font-size: 9px; font-weight: bold; margin-bottom: 6px;}
+        .bulk-grade-btn { width: 100%; background: rgba(59, 130, 246, 0.15); border: 1px dashed var(--btn-blue); color: #93c5fd; padding: 6px; border-radius: 6px; font-weight: 900; font-size: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px;}
+
+        /* كارت الطالب */
+        .students-list { display: flex; flex-direction: column; gap: 8px; padding: 0 12px; }
+        .student-card { background: var(--card-bg); border: 1px solid var(--border); border-right: 3px solid var(--btn-purple); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px;}
+        .sc-header { display: flex; justify-content: space-between; align-items: center;}
+        .sc-info-wrap { display: flex; align-items: center; gap: 8px;}
+        .sc-avatar { width: 30px; height: 30px; background: linear-gradient(135deg, var(--btn-blue), var(--btn-purple)); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: 900; color: white;}
+        .sc-name { font-size: 12px; font-weight: 900; color: #fff; margin: 0 0 2px 0;}
+        .sc-meta { display: flex; gap: 6px; font-size: 8px; font-weight: 800; }
+        .sc-group-badge { background: rgba(59, 130, 246, 0.15); color: #93c5fd; padding: 2px 4px; border-radius: 4px;}
+        .sc-code-badge { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #000000; padding: 2px 4px; border-radius: 4px; font-weight: 900;}
+        
+        .sc-grade-status { background: rgba(255,255,255,0.03); border: 1px dashed var(--border); padding: 4px; border-radius: 4px; font-size: 9px; font-weight: 900; color: #ffffff; display: flex; align-items: center; justify-content: center; gap: 4px;}
+        
+        .sc-grade-status.graded-positive { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--btn-green);}
+        .sc-grade-status.graded-negative { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--btn-red);}
+        .sc-grade-status.graded-mixed { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: var(--btn-orange);}
+
+        .sc-actions { display: flex; gap: 4px; justify-content: space-between; }
+        .btn-action { flex: 1; padding: 5px 2px; border-radius: 4px; border: none; font-size: 9px; font-weight: 900; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 3px; transition: 0.2s;}
+        .btn-grade { background: rgba(139, 92, 246, 0.15); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3);}
+        .btn-manage { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);}
+        .btn-history { background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.3);}
+
+        /* نظام الصفحات */
+        .pagination-container { display: flex; justify-content: center; gap: 6px; margin: 15px 12px; flex-wrap: wrap; }
+        .page-btn { background: var(--bg-nav); border: 1px solid var(--border); color: white; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s; display: inline-flex; justify-content: center; align-items: center;}
+        .page-btn.active { background: var(--btn-purple); border-color: var(--btn-purple); box-shadow: 0 0 10px rgba(124, 58, 237, 0.4); }
+        .page-btn:active { transform: scale(0.9); }
+
+        /* ================= مودال رصد السلوك ================= */
+        .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 4000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px);}
+        .custom-modal-overlay.show { display: flex; }
+        .grade-box { background: var(--bg-dark); width: 92%; max-width: 400px; border-radius: 16px; border: 1px solid var(--border); padding: 16px; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.5); transform: scale(0.9); transition: 0.3s; max-height: 90vh; overflow-y: auto;}
+        .custom-modal-overlay.show .grade-box { transform: scale(1); }
+        
+        .gb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px;}
+        .gb-title { font-size: 14px; font-weight: 900; color: #fff;}
+        .gb-close { background: var(--card-bg); border: none; color: white; width: 25px; height: 25px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; cursor: pointer;}
+        
+        .student-name-box { background-color: var(--bg-dark); padding: 12px; border-radius: 10px; border-right: 4px solid #a29bfe; margin-bottom: 15px; border: 1px solid var(--border); border-right-color: #a29bfe;}
+        .student-name-box label { display: block; color: var(--text-muted); font-size: 10px; margin-bottom: 4px; font-weight: bold;}
+        .student-name-box h3 { font-size: 15px; color: white; margin: 0; font-weight: 900;}
+
+        .bh-label { display: block; margin-bottom: 6px; font-size: 11px; font-weight: bold; }
+        .bh-label i { margin-left: 4px; }
+        .label-pos { color: var(--btn-green); }
+        .label-neg { color: var(--btn-red); }
+
+        .tags-container { min-height: 40px; border: 1px dashed var(--border); border-radius: 8px; padding: 6px; display: flex; flex-wrap: wrap; gap: 6px; background-color: rgba(0,0,0,0.2); margin-top: 6px; margin-bottom: 12px;}
+        .bh-tag { background-color: var(--card-bg); color: white; padding: 4px 8px; border-radius: 5px; font-size: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px; border: 1px solid var(--border); }
+        .bh-tag.pos { border-right: 3px solid var(--btn-green); }
+        .bh-tag.neg { border-right: 3px solid var(--btn-red); }
+        .bh-tag i { cursor: pointer; color: var(--text-muted); font-size: 12px;}
+
+        .gm-save-btn { width: 100%; background: linear-gradient(90deg, #9b51e0 0%, #56ccf2 100%); color: white; border: none; padding: 12px; border-radius: 10px; font-size: 12px; font-weight: 900; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 5px; transition: 0.3s;}
+        .gm-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* شهادة التقدير المصممة CSS */
+        #certOverlay { z-index: 9999; flex-direction: column; gap: 15px; }
+        .cert-html-box {
+            width: 100%; max-width: 600px; aspect-ratio: 1.414 / 1; 
+            background-color: #fffcf5; 
+            border: 12px solid #0f172a; 
+            outline: 4px solid #fbbf24; outline-offset: -8px;
+            padding: 5%; box-sizing: border-box; 
+            display: flex; flex-direction: column; justify-content: space-between; align-items: center; 
+            text-align: center; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+        .cert-html-box::before, .cert-html-box::after { content: '⚜️'; position: absolute; color: #fbbf24; font-size: 24px; }
+        .cert-html-box::before { top: 10px; left: 10px; }
+        .cert-html-box::after { bottom: 10px; right: 10px; }
+        
+        .cert-title { color: #0f172a; font-size: clamp(20px, 5vw, 32px); font-weight: 900; border-bottom: 2px solid #fbbf24; padding-bottom: 5px; margin-bottom: 10px; }
+        .cert-sub { color: #475569; font-size: clamp(10px, 2.5vw, 16px); font-weight: bold; margin-bottom: 10px;}
+        .cert-name { color: #b45309; font-size: clamp(24px, 6vw, 38px); font-weight: 900; margin-bottom: 10px; }
+        .cert-desc { color: #0f172a; font-size: clamp(11px, 2.8vw, 16px); font-weight: bold; line-height: 1.6; max-width: 90%; }
+        .cert-footer { display: flex; justify-content: space-between; width: 90%; border-top: 1px dashed #cbd5e1; padding-top: 10px; color: #0f172a; font-weight: bold; font-size: clamp(9px, 2vw, 14px); }
+
+        /* ================= شاشة الطباعة الجماعية ================= */
+        .bulk-cert-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-dark); z-index: 99999; display: none; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+        .bulk-cert-overlay.show { display: flex; }
+        .bulk-toolbar { position: sticky; top: 0; background: #0f172a; padding: 10px; display: flex; justify-content: center; gap: 8px; z-index: 10; border-bottom: 2px solid #334155; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .bulk-btn { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px 16px; border-radius: 6px; border: none; font-weight: 900; font-size: 12px; font-family: 'Cairo', sans-serif; color: #fff; cursor: pointer; transition: 0.2s; }
+        .bulk-btn:active { transform: scale(0.95); }
+        .bulk-container { display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 20px; width: 100%; }
+        
+        @media print {
+            body > *:not(#bulkCertOverlayContainer) { display: none !important; }
+            #bulkCertOverlayContainer { display: block !important; position: static !important; overflow: visible !important; background: transparent !important; }
+            .bulk-toolbar { display: none !important; }
+            .bulk-container { padding: 0 !important; gap: 0 !important; display: block !important; }
+            .cert-html-box { page-break-after: always !important; box-shadow: none !important; margin: 0 auto !important; width: 297mm !important; height: 210mm !important; }
+            @page { size: A4 landscape; margin: 0; }
+        }
+
+        /* السجل السري الشهري */
+        .secret-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5000; display: none; flex-direction: column; }
+        .secret-modal-overlay.show { display: flex; }
+        .sm-header { padding: 12px; background: var(--bg-nav); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;}
+        .sm-title { color: #fff; font-size: 14px; font-weight: 900; margin: 0;}
+        .sm-close { color: var(--btn-red); font-size: 20px; background: transparent; border: none; cursor: pointer;}
+        .months-tabs { display: flex; overflow-x: auto; background: var(--bg-dark); padding: 8px; gap: 6px; border-bottom: 1px solid var(--border);}
+        .month-btn { flex: 0 0 auto; background: var(--card-bg); border: 1px solid var(--border); color: #ffffff; padding: 6px 12px; border-radius: 15px; font-size: 11px; font-weight: 900; cursor: pointer;}
+        .month-btn.active { background: var(--btn-blue); color: #fff; border-color: var(--btn-blue);}
+        .sm-body { flex: 1; padding: 15px; padding-bottom: 120px !important; overflow-y: auto; display: flex; flex-direction: column; justify-content: flex-start; align-items: center;}
+        .report-paper { background: #ffffff; width: 100%; max-width: 600px; min-height: 400px; border-radius: 10px; padding: 15px; color: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);}
+        .rp-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 12px; font-weight: 900; margin-top: 15px;}
+        .rp-table th, .rp-table td { border: 1px solid #000; padding: 6px;}
+        .rp-table th { background: #f1f5f9; }
+        .sm-footer-actions { width: 100%; max-width: 600px; display: flex; gap: 6px; margin-top: 15px; margin-bottom: 20px;}
+        .sm-footer-actions button { flex: 1; padding: 8px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; color: white; display: flex; justify-content: center; align-items: center; gap: 4px; font-size: 11px;}
+
+        /* تنسيق مسح السجلات */
+        .clear-list-wrapper { max-height: 120px; overflow-y: auto; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; padding: 5px; }
+        .clear-stu-item { padding: 8px; border-bottom: 1px solid var(--border); font-size: 11px; color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s;}
+        .clear-stu-item:hover, .clear-stu-item.selected { background: var(--btn-blue); }
+        .modal-error-msg { color: #ef4444; font-size: 10px; font-weight: bold; text-align: center; margin-bottom: 5px; min-height: 15px;}
+
+        div:where(.swal2-container) h2:where(.swal2-title) { color: #ffffff !important; font-weight: 900 !important; }
+        div:where(.swal2-container) div:where(.swal2-html-container) { color: #ffffff !important; font-weight: bold !important; font-size: 12px !important; }
+
+        /* شريط التنقل السفلي */
+        .bottom-nav { 
+            position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 500px; 
+            background-color: var(--bg-nav); display: flex; justify-content: space-around; align-items: center; 
+            height: 65px; border-top: 1px solid rgba(255,255,255,0.05); z-index: 9999; box-shadow: 0 -5px 15px rgba(0,0,0,0.3); 
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-muted); cursor: pointer; text-decoration: none; transition: 0.2s; flex: 1;}
+        .nav-item i { font-size: 18px; } .nav-item span { font-size: 10px; font-weight: 700; }
+        .nav-item.active { color: var(--btn-purple); }
+
+    </style>
+</head>
+<body>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const currentCenterId = sessionStorage.getItem("activeCenterId");
+            if (!currentCenterId) return;
+
+            const cachedAuth = localStorage.getItem('classy_auth_' + currentCenterId);
+            if(cachedAuth) {
+                const data = JSON.parse(cachedAuth);
+                if(data.teacher_name) {
+                    window.globalTeacherName = data.teacher_name;
+                    document.getElementById("headerTeacherName").innerHTML = `<span class="page-icon"><i class="fa-solid fa-user-shield"></i></span> ${data.teacher_name}`;
+                }
+                if(data.teacher_photo) document.getElementById("headerTeacherPhoto").src = data.teacher_photo;
+            }
+
+            const cachedGroups = localStorage.getItem('classy_groups_' + currentCenterId);
+            if(cachedGroups) {
+                window.allGroupsData = JSON.parse(cachedGroups);
+                const groupFilter = document.getElementById("groupFilter");
+                if (groupFilter) {
+                    groupFilter.innerHTML = '<option value="">كل المجموعات</option>';
+                    window.allGroupsData.forEach(g => {
+                        let gName = g.group_name || g.name;
+                        groupFilter.innerHTML += `<option value="${g.id}">${gName}</option>`;
+                    });
+                }
+            }
+
+            const cachedStudents = localStorage.getItem('classy_students_' + currentCenterId);
+            if(cachedStudents) {
+                window.allStudentsData = JSON.parse(cachedStudents);
+                setTimeout(() => { if(typeof window.renderStudents === 'function') window.renderStudents(); }, 10);
+            }
+        });
+    </script>
+
+    <header class="top-header">
+        <div class="header-right">
+            <button class="menu-btn" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-arrow-right"></i></button>
+            <div class="profile-wrapper">
+                <div style="position: relative; display: inline-block;">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="profile-pic" id="headerTeacherPhoto">
+                    <div class="net-status" id="networkStatus"></div>
+                </div>
+            </div>
+            <div class="profile-info">
+                <h1 id="headerTeacherName"><span class="page-icon"><i class="fa-solid fa-user-shield"></i></span> رصد السلوك</h1>
+                <p id="headerCenterName">تقييم ومتابعة أخلاقيات الطلاب</p>
+            </div>
+        </div>
+        <div class="header-left"></div>
+    </header>
+
+    <div class="header-actions-row">
+        <button class="honor-board-btn" style="flex: 1;" onclick="openHonorBoard()">
+            <i class="fa-solid fa-trophy"></i> أبطال السلوك المتميز (لوحة الشرف)
+        </button>
+    </div>
+
+    <div class="filters-card">
+        <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+            <div style="position: relative; flex: 2;">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #ffffff; font-size: 11px;"></i>
+                <input type="text" id="searchInput" class="form-input" placeholder="بحث باسم طالب أو كود..." oninput="resetPageAndRender()">
+            </div>
+            <div style="flex: 1;">
+                <select id="groupFilter" class="form-input" onchange="resetPageAndRender()">
+                    <option value="">كل المجموعات</option>
+                </select>
+            </div>
+        </div>
+        
+        <button class="ghost-filter-btn" id="ghostFilterBtn" onclick="toggleGhostFilter()">
+            <i class="fa-solid fa-ghost"></i> إظهار الطلاب (غير المقيمين اليوم) فقط
+        </button>
+        <button class="clear-records-btn" onclick="openClearHistoryModal()">
+            <i class="fa-solid fa-calendar-xmark"></i> مسح سجلات السلوك
+        </button>
+    </div>
+
+    <div class="progress-card">
+        <div class="progress-header">
+            <span style="color:#ffffff;"><i class="fa-solid fa-chart-pie"></i> معدل إنجاز التقييم:</span>
+            <span id="progressTextRatio" style="color:#fff;">0 من 0 (0%)</span>
+        </div>
+        <div class="progress-track">
+            <div class="progress-fill" id="progressBarFill"></div>
+        </div>
+        <div class="progress-stats">
+            <span id="progressRemaining" style="color: var(--btn-orange);">المتبقي: 0</span>
+        </div>
+        <button class="bulk-grade-btn" onclick="bulkBehaviorRemaining()">
+            <i class="fa-solid fa-bolt"></i> إعطاء تقييم (ممتاز) للكل المتبقيين
+        </button>
+    </div>
+
+    <div class="students-list" id="studentsListContainer"></div>
+    
+    <div class="pagination-container" id="paginationContainer"></div>
+
+    <div class="custom-modal-overlay" id="behaviorModalOverlay">
+        <div class="grade-box">
+            <div class="gb-header">
+                <h3 class="gb-title">رصد وتقييم سلوك الطالب اليومي</h3>
+                <button class="gb-close" onclick="closeBehaviorModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="student-name-box">
+                <label>اسم الطالب المستهدف:</label>
+                <h3 id="bmStudentName">اسم الطالب</h3>
+            </div>
+            <input type="hidden" id="bmStudentBarcode">
+            
+            <div style="margin-bottom: 12px;">
+                <label class="bh-label" style="color: var(--text-muted);"><i class="fa-regular fa-calendar-alt"></i> تاريخ التقييم النشط *</label>
+                <input type="date" id="bmDateInput" class="form-input" onchange="window.verifyBehaviorAttendance()">
+            </div>
+
+            <div>
+                <label class="bh-label label-pos"><i class="fa-solid fa-check-circle"></i> اختر السلوكيات الإيجابية المكتسبة</label>
+                <select id="posSelect" class="form-input" onchange="addBehavior('positive')">
+                    <option value="">-- اضغط لاختيار سلوك إيجابي وإضافته --</option>
+                    <option value="🌟 ممتاز">🌟 ممتاز</option>
+                    <option value="⭐ جيد جداً">⭐ جيد جداً</option>
+                    <option value="📖 تم تسميع الدرس كويس">📖 تم تسميع الدرس كويس</option>
+                    <option value="🗣️ تم الاجابه على الاسئله الشفويه">🗣️ تم الاجابه على الاسئله الشفويه</option>
+                    <option value="🙋‍♂️ يتفاعل مع الحصة">🙋‍♂️ يتفاعل مع الحصة</option>
+                    <option value="🛑 منضبط">🛑 منضبط</option>
+                    <option value="⏰ يصل مبكر قبل ميعاد الحصة">⏰ يصل مبكر قبل ميعاد الحصة</option>
+                    <option value="💡 يستجيب في الحصة">💡 يستجيب في الحصة</option>
+                </select>
+                <div class="tags-container" id="posTags"></div>
+            </div>
+
+            <div>
+                <label class="bh-label label-neg"><i class="fa-solid fa-times-circle"></i> اختر السلوكيات السلبية أو المخالفات</label>
+                <select id="negSelect" class="form-input" onchange="addBehavior('negative')">
+                    <option value="">-- اضغط لاختيار مخالفة وإضافتها --</option>
+                    <option value="🤐 لم يتم تسميع الدرس">🤐 لم يتم تسميع الدرس</option>
+                    <option value="❌ لم يتم حفظ الدرس">❌ لم يتم حفظ الدرس</option>
+                    <option value="📝 لم يتم عمل واجباته">📝 لم يتم عمل واجباته</option>
+                    <option value="😈 مشاغب">😈 مشاغب</option>
+                    <option value="📉 ضعيف">📉 ضعيف</option>
+                    <option value="😶 لا يستجيب">😶 لا يستجيب</option>
+                    <option value="🤼‍♂️ يتشاجر مع زملائه">🤼‍♂️ يتشاجر مع زملائه</option>
+                    <option value="🗣️ يتكلم اثناء الحصة">🗣️ يتكلم اثناء الحصة</option>
+                    <option value="🍔 يأكل اثناء الحصة">🍔 يأكل اثناء الحصة</option>
+                    <option value="📱 يستخدم الهاتف">📱 يستخدم الهاتف</option>
+                </select>
+                <div class="tags-container" id="negTags"></div>
+            </div>
+
+            <div style="margin-bottom: 5px;">
+                <label class="bh-label" style="color: var(--text-muted);">ملاحظات تفصيلية إضافية حول السلوك</label>
+                <textarea id="bmNotes" class="form-input" placeholder="اكتب أي ملاحظات إضافية هنا..." style="resize: vertical; min-height: 50px;"></textarea>
+            </div>
+
+            <button class="gm-save-btn" id="bmSaveBtn" onclick="saveBehavior()">
+                حفظ وتثبيت السلوك بالملف سحابياً <i class="fa-solid fa-cloud-upload-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= مودال شهادة التقدير الفردية ================= -->
+    <div class="custom-modal-overlay" id="certOverlay">
+        <button onclick="closeCertModal()" style="background:#ef4444; border:3px solid #fff; color:white; width:40px; height:40px; border-radius:50%; font-size:20px; cursor:pointer; align-self: flex-end; margin-right: 5%; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);"><i class="fa-solid fa-xmark"></i></button>
+        
+        <div id="captureCertDiv" class="cert-html-box">
+            <h1 class="cert-title">شهادة شكر وتقدير</h1>
+            <p class="cert-sub">تمنح إدارة منظومة الإدارة السحابية<br><span id="dynamicTeacherName1" style="color:#b45309; font-size:18px;">كيميائي / يحيى علي الزيادي</span><br>هذه الشهادة للطالب / الطالبة:</p>
+            <h2 id="finalCertName" class="cert-name">اسم الطالب</h2>
+            <p class="cert-desc">وذلك تقديراً منا لتميزه/ها الواضح في السلوك والانضباط والأخلاق العالية أثناء الحصص الدراسية، مع خالص تمنياتنا بدوام التفوق والنجاح المستمر.</p>
+            
+            <div class="cert-footer">
+                <div>التاريخ: <span id="finalCertDate"></span></div>
+                <div>توقيع المعلم: <span id="dynamicTeacherName2">يحيى الزيادي</span></div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; width: 95%; max-width: 600px; margin-top: 15px;">
+            <button onclick="downloadCertImage()" style="flex:1; background:#3b82f6; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-download"></i> حفظ كصورة</button>
+            <button onclick="sendCertWhatsApp()" style="flex:1; background:#10b981; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;"><i class="fa-brands fa-whatsapp"></i> إرسال لولي الأمر</button>
+        </div>
+    </div>
+
+    <!-- ================= شاشة الطباعة الجماعية للشهادات ================= -->
+    <div id="bulkCertOverlayContainer" class="bulk-cert-overlay">
+        <div class="bulk-toolbar">
+            <button class="bulk-btn" style="background:#3b82f6;" onclick="window.print()"><i class="fa-solid fa-print"></i> طباعة للمطبعة</button>
+            <button class="bulk-btn" style="background:#10b981;" onclick="downloadBulkPDF()"><i class="fa-solid fa-file-pdf"></i> تحميل PDF</button>
+            <button class="bulk-btn" style="background:#ef4444;" onclick="closeBulkCertificates()"><i class="fa-solid fa-xmark"></i> إغلاق ورجوع للوحة</button>
+        </div>
+        <div id="bulkCertContainer" class="bulk-container">
+        </div>
+    </div>
+
+    <!-- ================= السجل السري الشهري ================= -->
+    <div class="secret-modal-overlay" id="secretRecordModal">
+        <div class="sm-header">
+            <h3 class="sm-title"><i class="fa-solid fa-user-shield"></i> سجل سلوك الطالب</h3>
+            <button class="sm-close" onclick="closeSecretModal()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="months-tabs" id="srMonthsTabs"></div>
+        <div class="sm-body">
+            <div class="report-paper" id="reportPaperContent">
+                <div style="font-weight:bold; font-size:14px; margin-bottom:10px; text-align:center; border-bottom:2px solid #000; padding-bottom:5px;">
+                    سجل المتابعة السلوكية للطالب: <span id="rpStudentName" style="color:var(--btn-blue);">...</span>
+                </div>
+                <div id="rpMonthTitle" style="text-align:center; font-weight:bold; margin-bottom:10px;"></div>
+                <table class="rp-table">
+                    <thead><tr><th>التاريخ</th><th>الإيجابيات</th><th>السلبيات</th><th>ملاحظات</th></tr></thead>
+                    <tbody id="rpTableBody"></tbody>
+                </table>
+            </div>
+            
+            <div class="sm-footer-actions">
+                <button style="background:#3b82f6;" onclick="downloadSecretRecordAsImage()"><i class="fa-solid fa-download"></i> كصورة</button>
+                <button style="background:#25D366;" onclick="sendSecretRecordWhatsApp()"><i class="fa-brands fa-whatsapp"></i> واتساب</button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-house"></i><span>الرئيسية</span></a>
+        <a href="groups.html" class="nav-item"><i class="fa-solid fa-layer-group"></i><span>الصفوف</span></a>
+        <a href="students.html" class="nav-item"><i class="fa-solid fa-users"></i><span>الطلاب</span></a>
+        <a href="grades.html" class="nav-item"><i class="fa-solid fa-graduation-cap"></i><span>الدرجات</span></a>
+        <a href="behavior.html" class="nav-item active"><i class="fa-solid fa-star"></i><span>السلوك</span></a>
+        <a href="financial.html" class="nav-item"><i class="fa-solid fa-money-bill-wave"></i><span>المالية</span></a>
+    </nav>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, collection } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCPFOwLEjtPWl89wZTbAqQoNVUmIVTkzEI", authDomain: "smart-center-saas-53d3e.firebaseapp.com", projectId: "smart-center-saas-53d3e",
+            storageBucket: "smart-center-saas-53d3e.firebasestorage.app", messagingSenderId: "59706619521", appId: "1:59706619521:web:aba7722ddf2073fceebf80"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        const currentCenterId = sessionStorage.getItem("activeCenterId");
+        if (!currentCenterId) { window.location.href = "index.html"; }
+
+        window.allStudentsData = window.allStudentsData || []; 
+        window.allGroupsData = window.allGroupsData || [];
+        window.currentFilteredStudents = []; window.showUngradedOnly = false;
+        window.currentOpenedStudentData = null; 
+        window.activeCertStudent = null; 
+        
+        window.currentHonorStudents = []; 
+        window.globalTeacherName = window.globalTeacherName || "المعلم"; 
+
+        let currentPage = 1;
+        const itemsPerPage = 20;
+        
+        window.selectedBehaviors = { positive: [], negative: [] };
+
+        const getTodayFormatted = () => {
+            const d = new Date();
+            let month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+            if (month.length < 2) month = '0' + month; if (day.length < 2) day = '0' + day;
+            return [year, month, day].join('-');
+        };
+
+        window.formatDateToArabic = function(dateStr) {
+            if (!dateStr) return '';
+            let d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr;
+            return d.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+        };
+        
+        function checkNetworkStatus() {
+            const statusDot = document.getElementById('networkStatus');
+            if(navigator.onLine) { statusDot.style.backgroundColor = 'var(--btn-green)'; } 
+            else { statusDot.style.backgroundColor = 'var(--btn-red)'; }
+        }
+        window.addEventListener('online', checkNetworkStatus);
+        window.addEventListener('offline', checkNetworkStatus);
+        checkNetworkStatus();
+
+        onSnapshot(doc(db, "centers_auth", currentCenterId), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if(data.teacher_name) {
+                    window.globalTeacherName = data.teacher_name;
+                    document.getElementById("headerTeacherName").innerHTML = `<span class="page-icon"><i class="fa-solid fa-user-shield"></i></span> ${data.teacher_name}`;
+                }
+                if(data.teacher_photo) document.getElementById("headerTeacherPhoto").src = data.teacher_photo;
+            }
+        });
+
+        onSnapshot(collection(db, "centers", currentCenterId, "groups"), (snap) => {
+            window.allGroupsData = [];
+            const groupFilter = document.getElementById("groupFilter");
+            groupFilter.innerHTML = '<option value="">كل المجموعات</option>';
+            snap.forEach(d => {
+                const data = d.data();
+                window.allGroupsData.push({ id: d.id, name: data.group_name });
+                groupFilter.innerHTML += `<option value="${d.id}">${data.group_name}</option>`;
+            });
+            localStorage.setItem('classy_groups_' + currentCenterId, JSON.stringify(window.allGroupsData));
+            window.renderStudents();
+        });
+
+        onSnapshot(collection(db, "centers", currentCenterId, "students"), (snap) => {
+            window.allStudentsData = [];
+            snap.forEach(d => {
+                let sData = d.data();
+                sData.behaviors = sData.behaviors || [];
+                window.allStudentsData.push({ id: d.id, ...sData });
+            });
+            localStorage.setItem('classy_students_' + currentCenterId, JSON.stringify(window.allStudentsData));
+            window.renderStudents();
+        });
+
+        // ================= مسح السجلات =================
+        window.openClearHistoryModal = function() {
+            let gOpts = window.allGroupsData.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+            Swal.fire({
+                title: 'إدارة سجلات السلوك',
+                html: `
+                    <div style="text-align:right; font-family:'Cairo'; padding: 5px;">
+                        <div id="clearErrorMsg" class="modal-error-msg"></div>
+                        <div style="background:#1e293b; padding:15px; border-radius:8px; border:1px solid #334155; margin-bottom:15px;">
+                            <h4 style="color:#ef4444; font-size:12px; margin-bottom:10px; font-weight:bold;"><i class="fa-solid fa-calendar-xmark"></i> مسح تقييمات مجموعة بتاريخ محدد</h4>
+                            <select id="clearGrpInput" class="form-input" style="margin-bottom:8px; font-weight:bold; font-size:11px;"><option value="">- اختر المجموعة -</option>${gOpts}</select>
+                            <label style="display:block; text-align:right; font-size:10px; color:#cbd5e1; margin-bottom:4px; font-weight:bold;">اختر التاريخ:</label>
+                            <input type="date" id="clearDateInput" class="form-input" style="margin-bottom:10px; font-weight:bold; background:#fff !important; color:#000 !important; font-size:11px;">
+                            <button onclick="executeClearByDate()" style="width:100%; background:#ef4444; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; font-size:11px; cursor:pointer;"><i class="fa-solid fa-trash"></i> مسح بتاريخ التحديد</button>
+                        </div>
+                        <div style="background:#1e293b; padding:15px; border-radius:8px; border:1px solid #334155;">
+                            <h4 style="color:#fbbf24; font-size:12px; margin-bottom:10px; font-weight:bold;"><i class="fa-solid fa-user-slash"></i> تصفير سجل طالب بالكامل</h4>
+                            <input type="text" id="searchDeleteStudent" class="form-input" placeholder="ابحث باسم الطالب أو الكود..." onkeyup="filterDeleteList()" style="margin-bottom:8px; font-size:11px;">
+                            <div id="deleteStudentList" class="clear-list-wrapper"></div>
+                            <input type="hidden" id="selectedDeleteStudentCode">
+                            <button onclick="executeClearStudent()" style="width:100%; background:#f59e0b; color:black; border:none; padding:8px; border-radius:6px; font-weight:bold; font-size:11px; cursor:pointer;"><i class="fa-solid fa-eraser"></i> تصفير سجل الطالب المحدد</button>
+                        </div>
+                    </div>
+                `,
+                showConfirmButton: false, showCloseButton: true, didOpen: () => { filterDeleteList(); }
+            });
+        }
+        window.filterDeleteList = function() {
+            const q = document.getElementById('searchDeleteStudent').value.trim().toLowerCase();
+            const listDiv = document.getElementById('deleteStudentList');
+            listDiv.innerHTML = '';
+            let filtered = window.allStudentsData.filter(s => s.student_name.toLowerCase().includes(q) || s.barcode.includes(q)).slice(0, 20); 
+            if(filtered.length === 0) { listDiv.innerHTML = '<div style="color:gray; font-size:10px; text-align:center; padding:10px;">لا يوجد نتائج</div>'; return; }
+            filtered.forEach(s => {
+                let item = document.createElement('div');
+                item.className = 'clear-stu-item'; item.innerText = `${s.student_name} (${s.barcode})`;
+                item.onclick = function() {
+                    document.querySelectorAll('.clear-stu-item').forEach(el => el.classList.remove('selected'));
+                    this.classList.add('selected'); document.getElementById('selectedDeleteStudentCode').value = s.barcode;
+                };
+                listDiv.appendChild(item);
+            });
+        }
+        window.executeClearByDate = async function() {
+            const groupId = document.getElementById('clearGrpInput').value;
+            const dateInput = document.getElementById('clearDateInput').value;
+            const errorMsg = document.getElementById('clearErrorMsg');
+            if(!groupId || !dateInput) { errorMsg.innerText = 'يرجى تحديد المجموعة والتاريخ أولاً!'; return; }
+            errorMsg.innerText = '';
+            
+            const arabicDate = window.formatDateToArabic(dateInput);
+
+            Swal.fire({
+                title: 'تأكيد المسح', text: `سيتم مسح سلوك المجموعة للتاريخ المحدد.`, icon: 'warning', showCancelButton: true, confirmButtonText: 'نعم، امسح', cancelButtonText: 'إلغاء', confirmButtonColor: '#ef4444'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({title: 'جاري المسح الحقيقي...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+                    try {
+                        let studentsInGroup = window.allStudentsData.filter(s => s.group_id === groupId);
+                        let promises = [];
+                        for (let stu of studentsInGroup) {
+                            if (stu.behaviors && stu.behaviors.length > 0) {
+                                let newBehav = stu.behaviors.filter(h => h.date !== arabicDate && h.date !== dateInput && h.iso_date !== dateInput);
+                                if(newBehav.length !== stu.behaviors.length) promises.push(updateDoc(doc(db, "centers", currentCenterId, "students", stu.barcode), { behaviors: newBehav }));
+                            }
+                        }
+                        await Promise.all(promises);
+                        Swal.fire({icon: 'success', title: 'تم المسح بنجاح!', timer: 1500, showConfirmButton: false});
+                    } catch(e) { Swal.fire('خطأ', 'حدث خطأ أثناء الاتصال بقاعدة البيانات', 'error'); }
+                }
+            });
+        }
+        window.executeClearStudent = async function() {
+            const barcode = document.getElementById('selectedDeleteStudentCode').value;
+            if(!barcode) { document.getElementById('clearErrorMsg').innerText = 'يجب اختيار طالب من القائمة أولاً!'; return; }
+            Swal.fire({
+                title: 'تصفير السجل', text: `سيتم مسح سجل سلوك الطالب بالكامل.`, icon: 'warning', showCancelButton: true, confirmButtonText: 'نعم، صفر', cancelButtonText: 'إلغاء', confirmButtonColor: '#ef4444'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({title: 'جاري التصفير...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+                    try {
+                        await updateDoc(doc(db, "centers", currentCenterId, "students", barcode), { behaviors: [] });
+                        Swal.fire({icon: 'success', title: 'تم التصفير بنجاح!', timer: 1500, showConfirmButton: false});
+                        document.getElementById('searchDeleteStudent').value = ''; filterDeleteList();
+                    } catch(e) { Swal.fire('خطأ', 'حدث خطأ أثناء الاتصال', 'error'); }
+                }
+            });
+        }
+
+        // ================= الريندر ونظام الصفحات =================
+        window.toggleGhostFilter = function() {
+            window.showUngradedOnly = !window.showUngradedOnly;
+            const btn = document.getElementById("ghostFilterBtn");
+            if(window.showUngradedOnly) {
+                btn.classList.add("active"); btn.innerHTML = `<i class="fa-solid fa-ghost"></i> إظهار الكل`;
+            } else {
+                btn.classList.remove("active"); btn.innerHTML = `<i class="fa-solid fa-ghost"></i> إظهار الطلاب (غير المقيمين اليوم) فقط`;
+            }
+            currentPage = 1; 
+            window.renderStudents();
+        }
+
+        window.resetPageAndRender = function() { currentPage = 1; window.renderStudents(); }
+
+        function isBehaviorTrackedOnDate(student, dateStr) {
+            if(!student.behaviors || student.behaviors.length === 0) return false;
+            let arabicDate = window.formatDateToArabic(dateStr);
+            return student.behaviors.some(g => g.iso_date === dateStr || g.date === arabicDate || g.date === dateStr);
+        }
+
+        window.renderStudents = function() {
+            if(window.allStudentsData.length === 0) return;
+
+            const q = document.getElementById("searchInput").value.trim().toLowerCase();
+            const grp = document.getElementById("groupFilter").value;
+            const list = document.getElementById("studentsListContainer");
+            
+            const dateInputVal = document.getElementById('bmDateInput') ? document.getElementById('bmDateInput').value : '';
+            const checkDate = dateInputVal ? dateInputVal : getTodayFormatted();
+            const arabicCheckDate = window.formatDateToArabic(checkDate);
+            
+            let baseFiltered = window.allStudentsData.filter(s => {
+                const matchQ = s.student_name.toLowerCase().includes(q) || s.barcode.includes(q);
+                const matchGrp = grp ? s.group_id === grp : true;
+                return matchQ && matchGrp && !s.is_suspended; 
+            });
+
+            let totalInGroup = baseFiltered.length;
+            let evaluatedCount = 0;
+            baseFiltered.forEach(s => { if(isBehaviorTrackedOnDate(s, checkDate)) evaluatedCount++; });
+            let progressRatio = totalInGroup > 0 ? Math.round((evaluatedCount / totalInGroup) * 100) : 0;
+            let remaining = totalInGroup - evaluatedCount;
+
+            document.getElementById("progressTextRatio").innerText = `تم تقييم ${evaluatedCount} من ${totalInGroup} (${progressRatio}%)`;
+            document.getElementById("progressBarFill").style.width = `${progressRatio}%`;
+            document.getElementById("progressRemaining").innerText = `المتبقي: ${remaining}`;
+
+            if(window.showUngradedOnly) { window.currentFilteredStudents = baseFiltered.filter(s => !isBehaviorTrackedOnDate(s, checkDate)); } 
+            else { window.currentFilteredStudents = baseFiltered; }
+
+            const totalPages = Math.ceil(window.currentFilteredStudents.length / itemsPerPage);
+            if(currentPage > totalPages) currentPage = totalPages || 1;
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedStudents = window.currentFilteredStudents.slice(startIndex, endIndex);
+
+            list.innerHTML = "";
+            if(window.currentFilteredStudents.length === 0) {
+                list.innerHTML = `<div style="text-align:center; color:#ffffff; padding:20px; font-weight:bold; font-size:12px;">لا يوجد طلاب مطابقين للبحث.</div>`;
+                renderPagination(0);
+                return;
+            }
+
+            paginatedStudents.forEach(s => {
+                let isEvaluated = isBehaviorTrackedOnDate(s, checkDate);
+                let statusHtml = '';
+                
+                if(isEvaluated) {
+                    let rec = s.behaviors.find(g => g.iso_date === checkDate || g.date === arabicCheckDate || g.date === checkDate);
+                    let posCount = rec.positive ? rec.positive.length : 0;
+                    let negCount = rec.negative ? rec.negative.length : 0;
+                    
+                    let colorClass = '';
+                    if (posCount > 0 && negCount === 0) colorClass = 'graded-positive'; 
+                    else if (posCount === 0 && negCount > 0) colorClass = 'graded-negative'; 
+                    else colorClass = 'graded-mixed'; 
+
+                    statusHtml = `<div class="sc-grade-status ${colorClass}"><i class="fa-solid fa-check-double"></i> تم التقييم (${posCount} إيجابي، ${negCount} سلبي)</div>`;
+                } else {
+                    statusHtml = `<div class="sc-grade-status"><i class="fa-regular fa-clock"></i> لم يتم تقييم سلوكه اليوم</div>`;
+                }
+
+                list.innerHTML += `
+                    <div class="student-card" id="card_${s.barcode}">
+                        <div class="sc-header">
+                            <div class="sc-info-wrap">
+                                <div class="sc-avatar">${s.student_name.charAt(0)}</div>
+                                <div class="sc-details">
+                                    <h4 class="sc-name">${s.student_name}</h4>
+                                    <div class="sc-meta"><span class="sc-group-badge">${s.group_name || 'بدون'}</span><span class="sc-code-badge">كود: ${s.barcode}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        ${statusHtml}
+                        <div class="sc-actions">
+                            <button class="btn-action btn-grade" onclick="openBehaviorModal('${s.barcode}')"><i class="fa-solid fa-pen-to-square"></i> رصد السلوك</button>
+                            <button class="btn-action btn-manage" onclick="openManageBehaviors('${s.barcode}')"><i class="fa-solid fa-sliders"></i> تعديل</button>
+                            <button class="btn-action btn-history" onclick="openSecretRecord('${s.barcode}')"><i class="fa-solid fa-list"></i> السجل</button>
+                        </div>
+                    </div>`;
+            });
+            renderPagination(totalPages);
+        }
+
+        window.renderPagination = function(totalPages) {
+            const container = document.getElementById("paginationContainer");
+            container.innerHTML = "";
+            if(totalPages <= 1) return;
+            for(let i = 1; i <= totalPages; i++) {
+                container.innerHTML += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+            }
+        }
+
+        window.changePage = function(page) {
+            currentPage = page; window.renderStudents(); window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ================= التقييم الجماعي (متصل بالتحضير) =================
+        window.bulkBehaviorRemaining = async function() {
+            let dateInputVal = document.getElementById('bmDateInput') ? document.getElementById('bmDateInput').value : '';
+            let checkDate = dateInputVal ? dateInputVal : getTodayFormatted();
+            let arabicCheckDate = window.formatDateToArabic(checkDate);
+
+            let remainingStudents = window.allStudentsData.filter(s => {
+                const matchGrp = document.getElementById("groupFilter").value ? s.group_id === document.getElementById("groupFilter").value : true;
+                return matchGrp && !s.is_suspended && !isBehaviorTrackedOnDate(s, checkDate);
+            });
+            if(remainingStudents.length === 0) { Swal.fire('تنبيه', 'لا يوجد طلاب متبقيين للتقييم.', 'info'); return; }
+
+            const { isConfirmed } = await Swal.fire({
+                title: 'تقييم إيجابي جماعي',
+                html: `<p style="font-size:12px; color:#ffffff; font-weight:bold;">هل أنت متأكد من إعطاء تقييم (🌟 ممتاز) و (🛑 منضبط) للطلاب المتبقيين؟<br><span style="color:var(--btn-orange);font-size:10px;">(سيتم استثناء الطلاب الغائبين والذين لم يتم تحضيرهم تلقائياً)</span></p>`,
+                showCancelButton: true, confirmButtonText: 'نعم، قيم الجميع', confirmButtonColor: '#10b981', cancelButtonText: 'إلغاء'
+            });
+
+            if (isConfirmed) {
+                Swal.fire({toast:true, position:'top', icon:'success', title:'جاري التقييم في الخلفية...', showConfirmButton:false, timer:2000});
+                let record = { date: arabicCheckDate, iso_date: checkDate, positive: ['🌟 ممتاز', '🛑 منضبط'], negative: [], notes: '' };
+                setTimeout(async () => {
+                    for (let s of remainingStudents) {
+                        let historyRecord = (s.history || []).find(h => h.iso_date === checkDate || h.date === arabicCheckDate);
+                        if (!historyRecord || historyRecord.att === 'none' || historyRecord.att === 'absent') {
+                            continue; 
+                        }
+
+                        let bArr = s.behaviors || [];
+                        bArr.push(record);
+                        await updateDoc(doc(db, "centers", currentCenterId, "students", s.barcode), { behaviors: bArr });
+                    }
+                }, 50);
+            }
+        }
+
+        // ================= دالة التحقق من الحضور =================
+        window.verifyBehaviorAttendance = function() {
+            const barcode = document.getElementById("bmStudentBarcode").value;
+            const s = window.allStudentsData.find(x => x.barcode === barcode);
+            if(!s) return;
+
+            let selectedDate = document.getElementById("bmDateInput").value;
+            // حماية إضافية لو كان المربع فاضي يرجعه لتاريخ النهاردة
+            if(!selectedDate) {
+                selectedDate = getTodayFormatted();
+                document.getElementById("bmDateInput").value = selectedDate;
+            }
+
+            const arabicSelectedDate = window.formatDateToArabic(selectedDate);
+            const historyRecord = (s.history || []).find(h => h.iso_date === selectedDate || h.date === arabicSelectedDate);
+
+            const posSelect = document.getElementById("posSelect");
+            const negSelect = document.getElementById("negSelect");
+            const notesInput = document.getElementById("bmNotes");
+            const saveBtn = document.getElementById("bmSaveBtn");
+
+            if(posSelect) posSelect.disabled = false;
+            if(negSelect) negSelect.disabled = false;
+            if(notesInput) notesInput.disabled = false;
+            if(saveBtn) { saveBtn.disabled = false; saveBtn.style.opacity = '1'; }
+
+            if (!historyRecord || historyRecord.att === 'none') {
+                if(posSelect) posSelect.disabled = true;
+                if(negSelect) negSelect.disabled = true;
+                if(notesInput) notesInput.disabled = true;
+                if(saveBtn) { saveBtn.disabled = true; saveBtn.style.opacity = '0.5'; }
+                Swal.fire({toast: true, position: 'top', icon: 'error', title: '<span style="color:#fff">غير مسجل بالغرفة!</span>', html: '<span style="color:#fff">روح حضر الطالب الأول في تاريخ التقييم.</span>', background: '#ef4444', showConfirmButton: false, timer: 3000});
+            } else if (historyRecord.att === 'absent') {
+                if(posSelect) posSelect.disabled = true;
+                if(negSelect) negSelect.disabled = true;
+                if(notesInput) notesInput.disabled = true;
+                if(saveBtn) { saveBtn.disabled = true; saveBtn.style.opacity = '0.5'; }
+                Swal.fire({toast: true, position: 'top', icon: 'warning', title: '<span style="color:#fff">الطالب غائب!</span>', html: '<span style="color:#fff">لا يمكن رصد سلوك لطالب غائب.</span>', background: '#f59e0b', showConfirmButton: false, timer: 3000});
+            }
+        };
+
+        // ================= مودال رصد السلوك =================
+        window.openBehaviorModal = function(barcode, editRecord = null) {
+            const s = window.allStudentsData.find(x => x.barcode === barcode);
+            if(!s) return;
+            
+            // تحديد التاريخ الصحيح للتحقق (تاريخ اليوم لو مفيش تعديل)
+            // استخدام getTodayFormatted يضمن جلب التاريخ بغض النظر عن حالة مربع الـ HTML
+            let checkDate = getTodayFormatted();
+            if(editRecord && editRecord.iso_date) {
+                checkDate = editRecord.iso_date;
+            }
+
+            // تحقق الحضور مبدئياً لو مش بنعمل تعديل
+            if (!editRecord) {
+                const arabicCheckDate = window.formatDateToArabic(checkDate);
+                // بنبحث في السجل لو الطالب حضر النهارده أو اتأخر أو واخد إذن
+                const historyRecord = (s.history || []).find(h => h.iso_date === checkDate || h.date === arabicCheckDate);
+                
+                if (!historyRecord || historyRecord.att === 'none') {
+                    Swal.fire({toast: true, position: 'top', icon: 'error', title: '<span style="color:#fff">غير مسجل بالغرفة!</span>', html: '<span style="color:#fff">روح حضر الطالب الأول في تاريخ التقييم.</span>', background: '#ef4444', showConfirmButton: false, timer: 3000});
+                    return;
+                } else if (historyRecord.att === 'absent') {
+                    Swal.fire({toast: true, position: 'top', icon: 'warning', title: '<span style="color:#fff">الطالب غائب!</span>', html: '<span style="color:#fff">لا يمكن رصد سلوك لطالب غائب.</span>', background: '#f59e0b', showConfirmButton: false, timer: 3000});
+                    return;
+                }
+            }
+
+            window.currentOpenedStudentData = s;
+            document.getElementById("bmStudentBarcode").value = barcode;
+            document.getElementById("bmStudentName").innerText = s.student_name;
+            window.selectedBehaviors = { positive: [], negative: [] };
+            document.getElementById("bmNotes").value = '';
+            document.getElementById("posSelect").value = '';
+            document.getElementById("negSelect").value = '';
+
+            // بعد ما نتأكد إن الطالب تمام، نحط التاريخ في المربع
+            document.getElementById("bmDateInput").value = checkDate;
+            
+            if (editRecord) {
+                window.selectedBehaviors.positive = [...(editRecord.positive || [])];
+                window.selectedBehaviors.negative = [...(editRecord.negative || [])];
+                document.getElementById("bmNotes").value = editRecord.notes || '';
+            }
+            
+            renderTags('positive'); renderTags('negative');
+            document.getElementById("behaviorModalOverlay").classList.add("show");
+            
+            // استدعاء فحص الحضور مع الأزرار للتشييك النهائي جوه المودال
+            window.verifyBehaviorAttendance();
+        }
+        
+        window.closeBehaviorModal = function() { document.getElementById("behaviorModalOverlay").classList.remove("show"); }
+
+        window.addBehavior = function(type) {
+            const selectEl = document.getElementById(type === 'positive' ? 'posSelect' : 'negSelect');
+            const val = selectEl.value;
+            if (val && !window.selectedBehaviors[type].includes(val)) { window.selectedBehaviors[type].push(val); renderTags(type); }
+            selectEl.value = ''; 
+        }
+
+        window.removeBehaviorTag = function(type, index) {
+            window.selectedBehaviors[type].splice(index, 1); renderTags(type);
+        }
+
+        window.renderTags = function(type) {
+            const container = document.getElementById(type === 'positive' ? 'posTags' : 'negTags');
+            container.innerHTML = '';
+            window.selectedBehaviors[type].forEach((bh, idx) => {
+                container.innerHTML += `<div class="bh-tag ${type === 'positive' ? 'pos' : 'neg'}">${bh} <i class="fa-solid fa-xmark" onclick="removeBehaviorTag('${type}', ${idx})"></i></div>`;
+            });
+        }
+
+        window.saveBehavior = async function() {
+            const barcode = document.getElementById("bmStudentBarcode").value;
+            const selectedDate = document.getElementById("bmDateInput").value;
+            const arabicSelectedDate = window.formatDateToArabic(selectedDate);
+            const notes = document.getElementById("bmNotes").value;
+            
+            if(window.selectedBehaviors.positive.length === 0 && window.selectedBehaviors.negative.length === 0 && notes.trim() === '') {
+                Swal.fire({toast:true, position:'top', icon:'warning', title:'يجب اختيار سلوك واحد على الأقل!', showConfirmButton:false, timer:2000}); return;
+            }
+
+            const s = window.allStudentsData.find(x => x.barcode === barcode);
+            let bArr = s.behaviors || [];
+            let record = { date: arabicSelectedDate, iso_date: selectedDate, positive: window.selectedBehaviors.positive, negative: window.selectedBehaviors.negative, notes: notes };
+            
+            let existingIndex = bArr.findIndex(g => g.iso_date === selectedDate || g.date === arabicSelectedDate || g.date === selectedDate);
+            if(existingIndex >= 0) { bArr[existingIndex] = record; } else { bArr.push(record); }
+
+            updateDoc(doc(db, "centers", currentCenterId, "students", barcode), { behaviors: bArr });
+            Swal.fire({toast:true, position:'top', icon:'success', title:`تم حفظ السلوك سحابياً بنجاح`, showConfirmButton:false, timer:1500});
+            closeBehaviorModal();
+        }
+
+        // ================= إدارة التقييمات بالتبويبات والشهور =================
+        window.openManageBehaviors = function(barcode) {
+            const s = window.allStudentsData.find(x => x.barcode === barcode);
+            if(!s || !s.behaviors || s.behaviors.length === 0) { Swal.fire('تنبيه', 'لا يوجد سجل سلوكيات لهذا الطالب.', 'info'); return; }
+            
+            let groupedBehaviors = {};
+            const now = new Date();
+            const currentMonthName = now.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+            groupedBehaviors[currentMonthName] = [];
+
+            [...s.behaviors].reverse().forEach((g, idx) => {
+                let monthName = "تاريخ غير معروف";
+                let dateStr = g.date || "";
+
+                if(g.iso_date) {
+                    let parts = g.iso_date.split('-');
+                    if (parts.length >= 2) {
+                        let d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1);
+                        if (!isNaN(d.getTime())) monthName = d.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+                    }
+                } else if (dateStr.length >= 7) {
+                    let parts = dateStr.substring(0, 7).split('-');
+                    if (parts.length === 2) {
+                        let year = parseInt(parts[0]);
+                        let month = parseInt(parts[1]) - 1;
+                        let d = new Date(year, month, 1);
+                        if (!isNaN(d.getTime())) {
+                            monthName = d.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+                        }
+                    }
+                }
+                
+                if(!groupedBehaviors[monthName]) groupedBehaviors[monthName] = [];
+                let originalIndex = s.behaviors.length - 1 - idx;
+                groupedBehaviors[monthName].push({ ...g, originalIndex });
+            });
+
+            window.currentOpenedManageBarcode = barcode;
+            window.currentGroupedBehaviors = groupedBehaviors;
+
+            let tabsHtml = `<div class="months-tabs" style="display: flex; gap: 6px; overflow-x: auto; padding: 5px; border-bottom: 1px solid var(--border); margin-bottom: 10px;">`;
+            Object.keys(groupedBehaviors).forEach((monthKey, index) => {
+                if(groupedBehaviors[monthKey].length > 0 || monthKey === currentMonthName) {
+                    tabsHtml += `<button class="month-btn ${index === 0 ? 'active' : ''}" onclick="window.switchManageBehaviorsMonth('${monthKey}', this)" style="flex:0 0 auto;">${monthKey}</button>`;
+                }
+            });
+            tabsHtml += `</div>`;
+
+            let html = `
+            <div style="text-align: right; padding:5px; font-family:'Cairo'; position:relative;">
+                <button onclick="Swal.close()" style="position: absolute; top: -5px; left: -5px; background: #ef4444; color: white; width: 32px; height: 32px; border-radius: 50%; border: none; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4); z-index: 10000;"><i class="fa-solid fa-xmark"></i></button>
+                <h3 style="color: #fff; font-weight: 900; margin: 0 0 10px 0; text-align: center; padding-left: 35px;"><i class="fa-solid fa-star" style="color: var(--btn-purple);"></i> ${s.student_name}</h3>
+                ${tabsHtml}
+                <div id="manageBehaviorsListBody" style="max-height:50vh; overflow-y:auto; padding-right:5px;"></div>
+            </div>`;
+
+            Swal.fire({
+                html: html, showConfirmButton: false, showCloseButton: false, background: '#1a1f2c',
+                didOpen: () => {
+                    const availableMonths = Object.keys(groupedBehaviors);
+                    if(availableMonths.length > 0) window.switchManageBehaviorsMonth(availableMonths[0]);
+                }
+            });
+        }
+
+        window.switchManageBehaviorsMonth = function(monthKey, btnElement = null) {
+            if(btnElement) {
+                const parent = btnElement.parentElement;
+                parent.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+                btnElement.classList.add('active');
+            }
+            const container = document.getElementById("manageBehaviorsListBody"); if(!container) return; container.innerHTML = "";
+            
+            const records = window.currentGroupedBehaviors[monthKey] || [];
+            if(records.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:gray; padding:20px; font-size:12px;">لا توجد تقييمات في هذا الشهر.</div>`;
+                return;
+            }
+
+            records.forEach(b => {
+                let posCount = b.positive ? b.positive.length : 0;
+                let negCount = b.negative ? b.negative.length : 0;
+                container.innerHTML += `
+                    <div style="background:#121826; padding:10px; border-radius:8px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border);">
+                        <div style="font-size:12px;">
+                            <div style="color:#ffffff; font-weight:900;"><i class="fa-regular fa-calendar"></i> ${b.date}</div>
+                            <div style="margin-top:5px; font-size: 10px;">
+                                <span style="color:var(--btn-green); margin-left: 5px;">إيجابي: ${posCount}</span>
+                                <span style="color:var(--btn-red);">سلبي: ${negCount}</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <button onclick="editBehaviorRecord('${window.currentOpenedManageBarcode}', ${b.originalIndex})" style="background:rgba(59, 130, 246, 0.15); border:1px solid #3b82f6; color:#3b82f6; padding:6px 12px; border-radius:8px; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteBehaviorRecord('${window.currentOpenedManageBarcode}', ${b.originalIndex})" style="background:rgba(239, 68, 68, 0.15); border:1px solid #ef4444; color:#ef4444; padding:6px 12px; border-radius:8px; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        window.editBehaviorRecord = function(barcode, index) {
+            Swal.close(); 
+            setTimeout(() => { 
+                const s = window.allStudentsData.find(x => x.barcode === barcode);
+                const record = s.behaviors[index];
+                if(record) { openBehaviorModal(barcode, record); }
+            }, 300);
+        }
+
+        window.deleteBehaviorRecord = async function(barcode, index) {
+            Swal.fire({
+                title: 'تأكيد الحذف', text: 'هل أنت متأكد من مسح سجل هذا اليوم؟', icon: 'error', showCancelButton: true, confirmButtonText: 'احذف', confirmButtonColor: '#ef4444', cancelButtonText: 'إلغاء'
+            }).then(r => {
+                if(r.isConfirmed) {
+                    const s = window.allStudentsData.find(x => x.barcode === barcode);
+                    let arr = s.behaviors; arr.splice(index, 1);
+                    updateDoc(doc(db, "centers", currentCenterId, "students", barcode), { behaviors: arr });
+                    Swal.fire({toast:true, position:'top', icon:'success', title:'تم الحذف', showConfirmButton:false, timer:1000});
+                    setTimeout(() => openManageBehaviors(barcode), 1000);
+                }
+            });
+        }
+
+        // ================= السجل السري الشهري =================
+        window.openSecretRecord = function(barcode) {
+            const s = window.allStudentsData.find(x => x.barcode === barcode);
+            window.currentOpenedStudentData = s; document.getElementById("rpStudentName").innerText = s.student_name;
+            const tabsContainer = document.getElementById("srMonthsTabs"); tabsContainer.innerHTML = '';
+            
+            if(!s.behaviors || s.behaviors.length === 0) {
+                document.getElementById("rpMonthTitle").innerText = "";
+                document.getElementById("rpTableBody").innerHTML = `<tr><td colspan="4" style="padding:15px; color:gray; font-weight:bold;">لا يوجد سجل تقييمات للطالب حتى الآن</td></tr>`;
+                document.getElementById("secretRecordModal").classList.add("show"); return;
+            }
+
+            let monthsSet = new Set();
+            s.behaviors.forEach(g => { 
+                if(g.iso_date) {
+                    monthsSet.add(g.iso_date.substring(0, 7)); 
+                } else if(g.date) {
+                    let dateWords = g.date.split(' ');
+                    if(dateWords.length >= 3) {
+                        monthsSet.add(dateWords[1] + " " + dateWords[2]); 
+                    }
+                }
+            });
+            let monthsArr = Array.from(monthsSet).sort().reverse(); 
+
+            monthsArr.forEach((monthKey, index) => {
+                let monthName = monthKey;
+                if(monthKey.includes('-')) {
+                    let parts = monthKey.split('-');
+                    if(parts.length === 2) {
+                        let d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1);
+                        if (!isNaN(d.getTime())) monthName = d.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+                    }
+                }
+                tabsContainer.innerHTML += `<button class="month-btn ${index === 0 ? 'active' : ''}" onclick="loadMonthReport('${monthKey}', '${monthName}', this)">${monthName}</button>`;
+            });
+
+            if(monthsArr.length > 0) { 
+                let firstMonthKey = monthsArr[0];
+                let firstMonthName = firstMonthKey;
+                if(firstMonthKey.includes('-')) {
+                    let firstParts = firstMonthKey.split('-');
+                    if(firstParts.length === 2) {
+                        let df = new Date(parseInt(firstParts[0]), parseInt(firstParts[1]) - 1, 1);
+                        if (!isNaN(df.getTime())) firstMonthName = df.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+                    }
+                }
+                loadMonthReport(firstMonthKey, firstMonthName); 
+            }
+            document.getElementById("secretRecordModal").classList.add("show");
+        }
+        window.loadMonthReport = function(monthKey, monthNameText, btnElement = null) {
+            if(btnElement) { document.querySelectorAll(".month-btn").forEach(b => b.classList.remove("active")); btnElement.classList.add("active"); }
+            document.getElementById("rpMonthTitle").innerText = `عن شهر: ${monthNameText}`;
+            const tbody = document.getElementById("rpTableBody"); tbody.innerHTML = '';
+            
+            let monthBehaviors = window.currentOpenedStudentData.behaviors.filter(g => {
+                if(g.iso_date && g.iso_date.startsWith(monthKey)) return true;
+                if(g.date && g.date.includes(monthKey)) return true;
+                return false;
+            });
+            
+            if (monthBehaviors.length === 0) {
+                 tbody.innerHTML = `<tr><td colspan="4" style="padding:15px; color:gray; font-weight:bold;">لا يوجد سجل للطالب في هذا الشهر</td></tr>`; return;
+            }
+            monthBehaviors.forEach(b => {
+                let posText = b.positive && b.positive.length > 0 ? b.positive.join('<br>') : '-';
+                let negText = b.negative && b.negative.length > 0 ? b.negative.join('<br>') : '-';
+                let notes = b.notes ? b.notes : '-';
+                tbody.innerHTML += `<tr><td style="direction:ltr;">${b.date}</td><td style="color:green; font-size:10px;">${posText}</td><td style="color:red; font-size:10px;">${negText}</td><td style="font-size:10px; color:gray;">${notes}</td></tr>`;
+            });
+        }
+        window.closeSecretModal = function() { document.getElementById("secretRecordModal").classList.remove("show"); }
+        window.downloadSecretRecordAsImage = function() {
+            html2canvas(document.getElementById('reportPaperContent'), { scale: 2, backgroundColor: "#ffffff" }).then(canvas => {
+                let link = document.createElement('a'); link.download = `سجل_سلوك_${window.currentOpenedStudentData.student_name}.png`; link.href = canvas.toDataURL('image/png'); link.click();
+            });
+        }
+        window.sendSecretRecordWhatsApp = function() {
+            let stu = window.currentOpenedStudentData; let phone = stu.parent_phone || stu.phone || "";
+            if(!phone || phone.trim() === "") { Swal.fire({ icon: 'error', title: 'تنبيه', text: 'لا يوجد رقم مسجل!', confirmButtonText: 'حسناً', confirmButtonColor: '#ef4444' }); return; }
+            let msg = `📄 تقرير السلوك للطالب/ة: ${stu.student_name}\n${document.getElementById("rpMonthTitle").innerText}\n\n`;
+            
+            let activeMonthBtnText = document.querySelector('.month-btn.active').innerText;
+            let rows = document.getElementById("rpTableBody").querySelectorAll("tr");
+            
+            if(rows.length > 0 && !rows[0].innerText.includes('لا يوجد')) {
+                rows.forEach(row => {
+                    let cols = row.querySelectorAll("td");
+                    if(cols.length === 4) {
+                        msg += `🗓 يوم: ${cols[0].innerText}\n`;
+                        if(cols[1].innerText !== '-') msg += `✅ إيجابيات: ${cols[1].innerHTML.split('<br>').join('، ')}\n`;
+                        if(cols[2].innerText !== '-') msg += `❌ سلبيات: ${cols[2].innerHTML.split('<br>').join('، ')}\n`;
+                        msg += `-------------\n`;
+                    }
+                });
+            } else { msg += "لا توجد تقييمات مسجلة.\n"; }
+            msg += `\nللتواصل والاستفسار: 01004999884`; window.open(`https://wa.me/2${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        // ================= أبطال السلوك والطباعة الجماعية =================
+        window.openHonorBoard = function() {
+            let todayDate = getTodayFormatted();
+            Swal.fire({
+                title: '🏆 أبطال السلوك المتميز',
+                html: `
+                    <div style="text-align:right; font-family:'Cairo';">
+                        <div style="display:flex; gap:5px; margin-bottom:10px;">
+                            <input type="date" id="hbDateFilter" class="form-input" value="${todayDate}" onchange="renderHonorBoardList()" style="background:#1e293b; color:#fff; flex:1;">
+                            <input type="text" id="hbSearchFilter" class="form-input" placeholder="بحث بالاسم أو الكود..." oninput="renderHonorBoardList()" style="background:#1e293b; color:#fff; flex:2;">
+                        </div>
+                        <div id="honorBoardResults" style="max-height:45vh; overflow-y:auto; padding:5px;"></div>
+                        <!-- الزر الجديد للطباعة الجماعية -->
+                        <button onclick="openBulkCertificates()" style="width:100%; background:var(--btn-blue); color:#fff; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px; margin-top:10px;"><i class="fa-solid fa-print"></i> عرض وطباعة الكل كشهادات</button>
+                    </div>
+                `,
+                showConfirmButton: false, showCloseButton: true,
+                didOpen: () => { window.renderHonorBoardList(); }
+            });
+        }
+
+        window.renderHonorBoardList = function() {
+            const checkDate = document.getElementById('hbDateFilter').value;
+            const arabicCheckDate = window.formatDateToArabic(checkDate);
+            const searchQ = document.getElementById('hbSearchFilter') ? document.getElementById('hbSearchFilter').value.trim().toLowerCase() : '';
+            const container = document.getElementById('honorBoardResults');
+            
+            let validStudents = window.allStudentsData.filter(s => {
+                if(!s.behaviors) return false;
+                let matchName = searchQ === '' || s.student_name.toLowerCase().includes(searchQ) || s.barcode.includes(searchQ);
+                let rec = s.behaviors.find(g => g.iso_date === checkDate || g.date === arabicCheckDate || g.date === checkDate);
+                return matchName && rec && rec.positive && rec.positive.length > 0 && (!rec.negative || rec.negative.length === 0);
+            });
+
+            window.currentHonorStudents = validStudents;
+
+            if(validStudents.length === 0) { 
+                container.innerHTML = `<div style="text-align:center; padding:20px; color:#cbd5e1; font-weight:bold; font-size:12px;">لا يوجد طلاب بلا مخالفات يطابقون البحث في هذا اليوم.</div>`;
+                return; 
+            }
+
+            let html = '';
+            validStudents.forEach((s) => {
+                let rec = s.behaviors.find(g => g.iso_date === checkDate || g.date === arabicCheckDate || g.date === checkDate);
+                html += `
+                    <div style="background:#1e293b; padding:8px; border-radius:8px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #334155; cursor:pointer;" onclick="openCertModal('${s.barcode}', '${checkDate}')">
+                        <div><strong style="color:#fff; font-size:12px; font-weight:900;">${s.student_name}</strong><div style="font-size:9px; color:#ffffff; margin-top:2px; font-weight:bold;">${s.group_name || 'بدون'}</div></div>
+                        <div style="display:flex; align-items:center; gap:8px;"><span style="color:var(--btn-green); font-weight:900; font-size:11px;">${rec.positive.length} سلوكيات إيجابية</span><span style="font-size:14px;">🏅</span></div>
+                    </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        // ================= شهادة التقدير الفردية =================
+        window.openCertModal = function(barcode, dateStr) {
+            Swal.close(); 
+            const s = window.allStudentsData.find(x => x.barcode === barcode);
+            if(!s) return;
+            window.activeCertStudent = s;
+            
+            document.getElementById('finalCertName').innerText = s.student_name;
+            document.getElementById('finalCertDate').innerText = window.formatDateToArabic(dateStr);
+            
+            document.getElementById('dynamicTeacherName1').innerText = window.globalTeacherName;
+            document.getElementById('dynamicTeacherName2').innerText = window.globalTeacherName;
+            
+            document.getElementById('certOverlay').classList.add('show');
+        }
+
+        window.closeCertModal = function() {
+            document.getElementById('certOverlay').classList.remove('show');
+            openHonorBoard();
+        }
+
+        window.downloadCertImage = function() {
+            const certDiv = document.getElementById('captureCertDiv');
+            Swal.fire({title: 'جاري تجهيز الصورة...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+            html2canvas(certDiv, { scale: 3, backgroundColor: "#fffcf5", useCORS: true }).then(canvas => {
+                Swal.close();
+                let link = document.createElement('a'); 
+                link.download = `شهادة_شكر_${window.activeCertStudent.student_name}.png`; 
+                link.href = canvas.toDataURL('image/png'); 
+                link.click();
+            });
+        }
+
+        window.sendCertWhatsApp = function() {
+            let stu = window.activeCertStudent;
+            let phone = stu.parent_phone || stu.phone || "";
+            if(!phone || phone.trim() === "") {
+                Swal.fire({ icon: 'error', title: 'تنبيه هام', text: 'هذا الطالب ليس له رقم مسجل!', confirmButtonText: 'حسناً', confirmButtonColor: '#ef4444' });
+                return;
+            }
+            Swal.fire({ 
+                title: 'إرسال الشهادة', text: 'يرجى حفظ الصورة أولاً ثم إرسالها. سيتم تحويلك للواتس آب الآن.', icon: 'info', showCancelButton: true, confirmButtonText: 'للواتس آب', cancelButtonText: 'إلغاء' 
+            }).then((res) => {
+                if(res.isConfirmed) {
+                    let msg = encodeURIComponent(`🎉 تهنئة وتكريم 🎉\n\nالسيد ولي الأمر المحترم،\nيسرنا في منظومة ${window.globalTeacherName} تقديم هذه الشهادة للطالب/ة ( ${stu.student_name} ).\n\nوذلك لتميزه في السلوك والانضباط والأخلاق العالية خلال الحصص الدراسية.\n\nتمنياتنا بدوام النجاح! 🌹\nللتواصل: 01004999884`);
+                    window.open(`https://wa.me/2${phone}?text=${msg}`, '_blank');
+                }
+            });
+        }
+
+        // ================= الطباعة الجماعية للشهادات =================
+        window.openBulkCertificates = function() {
+            if(!window.currentHonorStudents || window.currentHonorStudents.length === 0) {
+                Swal.fire('تنبيه', 'لا يوجد طلاب في لوحة الشرف حالياً لعرض شهاداتهم.', 'warning');
+                return;
+            }
+            
+            Swal.close();
+
+            let container = document.getElementById('bulkCertContainer');
+            let checkDate = document.getElementById('hbDateFilter').value;
+            let arabicDate = window.formatDateToArabic(checkDate);
+            let html = '';
+
+            window.currentHonorStudents.forEach(s => {
+                html += `
+                <div class="cert-html-box" style="margin-bottom: 20px; width:100%; max-width:800px; background-color:#fffcf5;">
+                    <h1 class="cert-title" style="color:#0f172a;">شهادة شكر وتقدير</h1>
+                    <p class="cert-sub" style="color:#475569;">تمنح إدارة منظومة الإدارة السحابية<br><span style="color:#b45309; font-size:18px;">${window.globalTeacherName}</span><br>هذه الشهادة للطالب / الطالبة:</p>
+                    <h2 class="cert-name" style="color:#b45309;">${s.student_name}</h2>
+                    <p class="cert-desc" style="color:#0f172a;">وذلك تقديراً منا لتميزه/ها الواضح في السلوك والانضباط والأخلاق العالية أثناء الحصص الدراسية، مع خالص تمنياتنا بدوام التفوق والنجاح المستمر.</p>
+                    <div class="cert-footer" style="color:#0f172a;">
+                        <div>التاريخ: <span>${arabicDate}</span></div>
+                        <div>توقيع المعلم: ${window.globalTeacherName}</div>
+                    </div>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+            document.getElementById('bulkCertOverlayContainer').classList.add('show');
+        }
+
+        window.closeBulkCertificates = function() {
+            document.getElementById('bulkCertOverlayContainer').classList.remove('show');
+            openHonorBoard();
+        }
+
+        window.downloadBulkPDF = function() {
+            Swal.fire({title: 'جاري تجهيز الـ PDF...', text: 'قد يستغرق الأمر ثواني حسب عدد الشهادات', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+            
+            var element = document.getElementById('bulkCertContainer');
+            var opt = {
+                margin:       10,
+                filename:     'شهادات_المتميزين.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            };
+            
+            html2pdf().set(opt).from(element).save().then(() => Swal.close());
+        }
+    </script>
+</body>
+</html>
