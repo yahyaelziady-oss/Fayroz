@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>إدارة الدرجات - منظومة الإدارة السحابية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- سكربت التحميل الفوري لمنع التأخير -->
+    <script>
+        const currentCenterId = sessionStorage.getItem("activeCenterId");
+        if (!currentCenterId) { window.location.href = "index.html"; }
+    </script>
+
+    <style>
+        :root {
+            --bg-dark: #121826; --bg-nav: #1e2532; --text-main: #ffffff; --text-muted: #cbd5e1; 
+            --btn-blue: #3b82f6; --btn-purple: #7c3aed; --btn-orange: #f59e0b;
+            --btn-green: #10b981; --btn-red: #ef4444; --btn-cyan: #0ea5e9; --btn-gray: #475569;
+            --border: #334155; --card-bg: #1a1f2c;
+        }
+
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-main); max-width: 500px; margin: 0 auto; min-height: 100vh; position: relative; padding-bottom: 80px; overflow-x: hidden; }
+
+        /* الهيدر الموحد */
+        .top-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .header-right { display: flex; align-items: center; gap: 10px; }
+        .menu-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--btn-purple); min-width: 32px; height: 32px; border-radius: 8px; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        .profile-pic { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--btn-purple); }
+        .net-status { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; border-radius: 50%; background-color: var(--btn-green); border: 2px solid var(--bg-nav); z-index: 10; display: flex; justify-content: center; align-items: center;}
+        
+        .profile-info { display: flex; flex-direction: column; justify-content: center; text-align: right;}
+        .profile-info h1 { font-size: 13px; font-weight: 800; color: #ffffff; margin-bottom: 0;}
+        .profile-info p { font-size: 9px; color: var(--text-muted); font-weight: 600; margin:0;}
+
+        /* أزرار الهيدر */
+        .header-actions-row { display: flex; gap: 6px; padding: 0 12px; margin-top: 8px; }
+        .honor-board-btn { flex: 2; background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #000; border: none; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 900; display: flex; justify-content: center; align-items: center; gap: 4px; cursor: pointer; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);}
+        .settings-cert-btn { flex: 1; background: var(--card-bg); border: 1px solid var(--btn-cyan); color: var(--btn-cyan); padding: 8px; border-radius: 8px; font-size: 10px; font-weight: 900; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px;}
+
+        /* الفلاتر */
+        .filters-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; margin: 8px 12px; padding: 8px; }
+        .form-input { width: 100%; padding: 6px 10px; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: white; font-size: 11px; font-family: 'Cairo'; outline: none;}
+        .form-input:focus { border-color: var(--btn-purple); }
+        
+        .ghost-filter-btn { width: 100%; background: rgba(239, 68, 68, 0.1); border: 1px dashed var(--btn-red); color: #ffffff; padding: 6px; border-radius: 6px; font-weight: bold; font-size: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px;}
+        .ghost-filter-btn.active { background: var(--btn-red); color: white; border-style: solid;}
+        .clear-records-btn { width: 100%; margin-top: 6px; background: rgba(245, 158, 11, 0.15); border: 1px solid var(--btn-orange); color: var(--btn-orange); padding: 6px; border-radius: 6px; font-weight: bold; font-size: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px;}
+
+        /* شريط الإنجاز */
+        .progress-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; margin: 0 12px 8px 12px; padding: 8px;}
+        .progress-header { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 10px; font-weight: 800;}
+        .progress-track { width: 100%; height: 5px; background: var(--bg-dark); border-radius: 10px; overflow: hidden; margin-bottom: 6px;}
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--btn-purple), var(--btn-blue)); border-radius: 10px; width: 0%; transition: width 0.5s;}
+        .progress-stats { display: flex; justify-content: space-between; font-size: 9px; font-weight: bold; margin-bottom: 6px;}
+        .avg-badge { background: rgba(16, 185, 129, 0.15); color: var(--btn-green); padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 900;}
+        .bulk-grade-btn { width: 100%; background: rgba(59, 130, 246, 0.15); border: 1px dashed var(--btn-blue); color: #93c5fd; padding: 6px; border-radius: 6px; font-weight: 900; font-size: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px;}
+
+        /* كارت الطالب */
+        .students-list { display: flex; flex-direction: column; gap: 8px; padding: 0 12px; }
+        .student-card { background: var(--card-bg); border: 1px solid var(--border); border-right: 3px solid var(--btn-purple); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px;}
+        .sc-header { display: flex; justify-content: space-between; align-items: center;}
+        .sc-info-wrap { display: flex; align-items: center; gap: 8px;}
+        .sc-avatar { width: 30px; height: 30px; background: linear-gradient(135deg, var(--btn-blue), var(--btn-purple)); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: 900; color: white;}
+        .sc-name { font-size: 12px; font-weight: 900; color: #fff; margin: 0 0 2px 0;}
+        .sc-meta { display: flex; gap: 6px; font-size: 8px; font-weight: 800; }
+        .sc-group-badge { background: rgba(59, 130, 246, 0.15); color: #93c5fd; padding: 2px 4px; border-radius: 4px;}
+        .sc-code-badge { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #000000; padding: 2px 4px; border-radius: 4px; font-weight: 900;}
+        
+        .sc-grade-status { background: rgba(255,255,255,0.03); border: 1px dashed var(--border); padding: 4px; border-radius: 4px; font-size: 9px; font-weight: 900; color: #ffffff; display: flex; align-items: center; gap: 4px;}
+        .sc-grade-status.graded { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--btn-green);}
+        .sc-grade-status.absent { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ff6b6b;}
+        .sc-grade-status.skipped { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #fbbf24;}
+
+        .sc-actions { display: flex; gap: 4px; justify-content: space-between; }
+        .btn-action { flex: 1; padding: 5px 2px; border-radius: 4px; border: none; font-size: 9px; font-weight: 900; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 3px; transition: 0.2s;}
+        .btn-grade { background: rgba(139, 92, 246, 0.15); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3);}
+        .btn-manage { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);}
+        .btn-history { background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.3);}
+
+        /* نظام الصفحات */
+        .pagination-container { display: flex; justify-content: center; gap: 6px; margin: 15px 12px; flex-wrap: wrap; }
+        .page-btn { background: var(--bg-nav); border: 1px solid var(--border); color: white; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s; display: inline-flex; justify-content: center; align-items: center;}
+        .page-btn.active { background: var(--btn-purple); border-color: var(--btn-purple); box-shadow: 0 0 10px rgba(124, 58, 237, 0.4); }
+        .page-btn:active { transform: scale(0.9); }
+
+        /* ================= مودال الرصد السلس ================= */
+        .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 4000; display: none; justify-content: center; align-items: flex-start; padding-top: 5vh; backdrop-filter: blur(5px); overflow-y: auto;}
+        .custom-modal-overlay.show { display: flex; }
+        .grade-box { background: var(--bg-dark); width: 92%; max-width: 400px; border-radius: 12px; border: 1px solid var(--border); padding: 12px; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.5); transform: scale(0.9); transition: 0.3s; margin-bottom: 20px;}
+        .custom-modal-overlay.show .grade-box { transform: scale(1); }
+        
+        .gb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 6px;}
+        .gb-title { font-size: 13px; font-weight: 900; color: #fff;}
+        .gb-close { background: transparent; border: none; color: var(--btn-red); font-size: 16px; cursor: pointer; }
+
+        .gb-body { max-height: 75vh; overflow-y: auto; padding-right: 5px; transition: padding-bottom 0.3s ease; }
+
+        .gb-student-name { text-align: center; font-size: 14px; font-weight: 900; color: var(--btn-purple); margin-bottom: 8px;}
+        .gb-date-input { width: 100%; padding: 6px; background: #ffffff; border: 1px solid var(--border); border-radius: 6px; color: #000; font-family: 'Cairo'; text-align: center; font-weight: bold; margin-bottom: 8px; font-size: 11px;}
+        
+        .gb-status-tabs { display: flex; gap: 4px; margin-bottom: 8px; background: var(--card-bg); padding: 4px; border-radius: 6px;}
+        .gb-tab { flex: 1; padding: 6px; border: none; background: transparent; color: #ffffff; border-radius: 4px; font-weight: 900; font-size: 10px; cursor: pointer; opacity: 0.6; transition: 0.2s;}
+        .gb-tab.active { opacity: 1; }
+        .gb-tab.active[data-val="tested"] { background: var(--btn-green); color: white;}
+        .gb-tab.active[data-val="absent"] { background: var(--btn-red); color: white;}
+        .gb-tab.active[data-val="skipped"] { background: var(--btn-orange); color: black;}
+
+        .gb-exam-types { display: flex; gap: 4px; margin-bottom: 8px;}
+        .gm-type-btn { flex: 1; padding: 6px; border: 1px solid var(--border); background: var(--card-bg); color: #ffffff; border-radius: 6px; font-weight: 900; font-size: 10px; cursor: pointer;}
+        .gm-type-btn.active { background: var(--btn-purple); color: white; border-color: var(--btn-purple);}
+
+        .gb-grading-area { display: flex; flex-direction: column; transition: 0.3s; }
+        .gb-title-text { font-size: 10px; color: #ffffff; text-align: center; margin-bottom: 5px; font-weight: 900; }
+        .gb-input-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; justify-content: center;}
+        
+        .gm-input { width: 60px; background: var(--card-bg); border: 2px solid var(--border); color: #fff; text-align: center; font-size: 16px; font-weight: 900; padding: 6px; border-radius: 6px; outline: none; cursor: pointer;}
+        .gm-input:focus { border-color: var(--btn-purple); }
+        .gm-input:disabled { opacity: 0.5; cursor: not-allowed; }
+        .gm-slash { font-size: 16px; font-weight: 900; color: #ffffff;}
+        
+        .auto-next-wrap { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 8px; background: rgba(59, 130, 246, 0.15); padding: 6px; border-radius: 6px; border: 1px dashed var(--btn-blue); cursor: pointer;}
+        .auto-next-wrap input { width: 12px; height: 12px; cursor: pointer; accent-color: var(--btn-blue); }
+        .auto-next-wrap label { color: #ffffff; font-size: 10px; font-weight: 900; cursor: pointer;}
+
+        .quick-grades { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-bottom: 8px; max-height: 100px; overflow-y: auto; padding: 4px; background: rgba(0,0,0,0.2); border-radius: 6px; border: 1px solid var(--border);}
+        .qg-btn { background: var(--card-bg); border: 1px solid var(--border); color: #fff; width: 34px; height: 34px; border-radius: 6px; font-size: 13px; font-weight: 900; cursor: pointer; display: flex; justify-content: center; align-items: center;}
+        .qg-btn:active { transform: scale(0.9); background: var(--btn-blue); border-color: var(--btn-blue);}
+
+        .gm-save-btn { width: 100%; background: linear-gradient(135deg, var(--btn-purple), #6d28d9); color: white; border: none; padding: 10px; border-radius: 8px; font-size: 12px; font-weight: 900; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;}
+        .gm-save-btn:disabled { background: var(--btn-gray); cursor: not-allowed; opacity: 0.5; }
+
+        /* مسح السجلات */
+        .clear-list-wrapper { max-height: 120px; overflow-y: auto; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; padding: 5px; }
+        .clear-stu-item { padding: 8px; border-bottom: 1px solid var(--border); font-size: 11px; color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s;}
+        .clear-stu-item:hover, .clear-stu-item.selected { background: var(--btn-blue); }
+        .modal-error-msg { color: #ef4444; font-size: 10px; font-weight: bold; text-align: center; margin-bottom: 5px; min-height: 15px;}
+
+        /* معرض الشهادات */
+        .gallery-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5000; display: none; flex-direction: column; }
+        .gallery-modal-overlay.show { display: flex; }
+        .gallery-header { padding: 12px; background: var(--bg-nav); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;}
+        .gallery-title { color: #fff; font-size: 14px; font-weight: 900; margin: 0;}
+        .gallery-close { color: var(--btn-red); font-size: 20px; background: transparent; border: none; cursor: pointer;}
+        
+        .gallery-body { flex: 1; padding: 12px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-content: start;}
+        .cert-thumb-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: 8px; overflow: hidden; position: relative; display: flex; flex-direction: column;}
+        .cert-thumb-card.active-cert { border-color: var(--btn-green); box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);}
+        .cert-thumb-img { width: 100%; aspect-ratio: 1.41/1; object-fit: cover;}
+        .cert-thumb-actions { display: flex; padding: 4px; gap: 4px; background: #000;}
+        .cert-thumb-btn { flex: 1; padding: 4px; font-size: 9px; font-weight: bold; border-radius: 4px; cursor: pointer; border: none; color: white;}
+        .btn-set-active { background: var(--btn-green); }
+        .btn-del-cert { background: var(--btn-red); }
+
+        .gallery-footer { padding: 12px; background: var(--bg-nav); border-top: 1px solid var(--border);}
+        .btn-upload-new { width: 100%; background: var(--btn-blue); color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: 900; cursor: pointer; font-size: 12px;}
+
+        /* تنظيم طبقات الظهور */
+        div:where(.swal2-container).swal2-center { z-index: 9000 !important; } 
+        .single-cert-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 20000 !important; display: none; flex-direction: column; justify-content: center; align-items: center; }
+        #printOverlayContainer { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #121826; z-index: 20000 !important; overflow-y: auto; overflow-x: hidden; }
+        div:where(.swal2-container).swal2-top, div:where(.swal2-container).swal2-top-end { z-index: 99999 !important; } 
+
+        /* ================= تصميم الشهادة الفردية ================= */
+        .single-cert-box { 
+            width: 95%; max-width: 800px; 
+            aspect-ratio: 1.414 / 1; 
+            position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.8); 
+            background-size: 100% 100%; 
+            background-position: center; background-repeat: no-repeat; background-color: #fffcf5; 
+        }
+        
+        #certDraggableName { position: absolute; color: #b45309; font-weight: 900; white-space: nowrap; cursor: move; user-select: none; text-shadow: 1px 1px 2px rgba(255,255,255,0.8); transform: translate(-50%, -50%); border: 1px dashed transparent; }
+        #certDraggableName:active { border-color: rgba(0,0,0,0.3); }
+
+        .cert-controls-panel { width: 95%; max-width: 800px; background: var(--card-bg); margin-top: 10px; padding: 8px; border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px;}
+        .cert-slider-row { display: flex; align-items: center; gap: 8px; color: white; font-size: 10px; font-weight: bold;}
+        .cert-slider-row input[type="range"] { flex: 1; accent-color: var(--btn-orange);}
+        .cert-btn-group { display: flex; gap: 4px; }
+        .cert-btn { flex: 1; padding: 6px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; display: flex; justify-content: center; align-items: center; gap: 4px; font-size: 10px;}
+
+        /* ================= شريط الطباعة الجماعية وأبعاد A4 السحرية ================= */
+        .print-toolbar { position: sticky; top: 0; background: #0f172a; padding: 10px; display: flex; justify-content: center; gap: 8px; z-index: 10; border-bottom: 2px solid #334155; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .pt-btn { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px 16px; border-radius: 6px; border: none; font-weight: 900; font-size: 12px; font-family: 'Cairo', sans-serif; color: #fff; cursor: pointer; transition: 0.2s; }
+        .pt-btn:active { transform: scale(0.95); }
+        .pt-btn-print { background: #3b82f6; }
+        .pt-btn-pdf { background: #10b981; }
+        .pt-btn-close { background: #ef4444; }
+        
+        #printPagesArea { display: flex; flex-direction: column; align-items: center; padding: 20px 0; width: 100%; overflow-x: hidden; }
+        
+        /* هذا الغلاف سيولد شهادة A4 حقيقية 1122 بيكسل وسيتم تصغيرها بالترانسفورم لتناسب الشاشة تماماً */
+        .cert-page-wrapper { 
+            width: 1122px; height: 793px; position: relative; background-color: #fff; 
+            background-size: 100% 100%; 
+            background-position: center; background-repeat: no-repeat; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.8); flex-shrink: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0 auto;
+        }
+        .cert-name-print { position: absolute; font-weight: 900; color: #b45309; transform: translate(-50%, -50%); white-space: nowrap; text-shadow: 2px 2px 4px rgba(255,255,255,0.8); }
+
+        @media print {
+            body > *:not(#printOverlayContainer) { display: none !important; }
+            #printOverlayContainer { display: block !important; position: static !important; overflow: visible !important; background: transparent !important; padding: 0 !important; }
+            .print-toolbar { display: none !important; }
+            #printPagesArea { padding: 0 !important; display: block !important; }
+            #printScaleWrapper { transform: scale(1) !important; gap: 0 !important; display: block !important; width: 100% !important; }
+            .cert-page-wrapper { box-shadow: none !important; margin: 0 !important; width: 297mm !important; height: 210mm !important; page-break-after: always !important; }
+            @page { size: A4 landscape; margin: 0; }
+        }
+
+        /* ================= السجل السري الشهري ================= */
+        .secret-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5000; display: none; flex-direction: column; }
+        .secret-modal-overlay.show { display: flex; }
+        .sm-header { padding: 12px; background: var(--bg-nav); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;}
+        .sm-title { color: #fff; font-size: 14px; font-weight: 900; margin: 0;}
+        .sm-close { color: var(--btn-red); font-size: 20px; background: transparent; border: none; cursor: pointer;}
+        .months-tabs { display: flex; overflow-x: auto; background: var(--bg-dark); padding: 8px; gap: 6px; border-bottom: 1px solid var(--border);}
+        .month-btn { flex: 0 0 auto; background: var(--card-bg); border: 1px solid var(--border); color: #ffffff; padding: 6px 12px; border-radius: 15px; font-size: 11px; font-weight: 900; cursor: pointer;}
+        .month-btn.active { background: var(--btn-blue); color: #fff; border-color: var(--btn-blue);}
+        
+        .sm-body { flex: 1; padding: 15px; padding-bottom: 120px !important; overflow-y: auto; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; width: 100%;}
+        .report-paper { background: #ffffff; width: 100%; max-width: 600px; min-height: 400px; border-radius: 10px; padding: 15px; color: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);}
+        .rp-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 12px; font-weight: 900; margin-top: 15px;}
+        .rp-table th, .rp-table td { border: 1px solid #000; padding: 6px;}
+        .rp-table th { background: #f1f5f9; }
+        .sm-footer-actions { width: 100%; max-width: 600px; display: flex; gap: 6px; margin-top: 15px; margin-bottom: 20px;}
+        .sm-footer-actions button { flex: 1; padding: 8px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; color: white; display: flex; justify-content: center; align-items: center; gap: 4px; font-size: 11px;}
+
+        /* شريط التنقل السفلي */
+        .bottom-nav { 
+            position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 500px; 
+            background-color: var(--bg-nav); display: flex; justify-content: space-around; align-items: center; 
+            height: 65px; border-top: 1px solid rgba(255,255,255,0.05); z-index: 9999; box-shadow: 0 -5px 15px rgba(0,0,0,0.3); 
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-muted); cursor: pointer; text-decoration: none; transition: 0.2s; flex: 1;}
+        .nav-item i { font-size: 18px; } .nav-item span { font-size: 10px; font-weight: 700; }
+        .nav-item.active { color: var(--btn-purple); }
+
+    </style>
+</head>
+<body>
+
+    <!-- الكاش الفوري السريع -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const currentCenterId = sessionStorage.getItem("activeCenterId");
+            if (!currentCenterId) return;
+
+            const cachedAuth = localStorage.getItem('classy_auth_' + currentCenterId);
+            if(cachedAuth) {
+                const data = JSON.parse(cachedAuth);
+                if(data.teacher_name) document.getElementById("headerTeacherName").innerHTML = `<span class="page-icon"><i class="fa-solid fa-chart-simple"></i></span> ${data.teacher_name}`;
+                if(data.teacher_photo) document.getElementById("headerTeacherPhoto").src = data.teacher_photo;
+                if(data.cert_gallery && Array.isArray(data.cert_gallery)) {
+                    window.certGallery = data.cert_gallery;
+                    let active = data.cert_gallery.find(c => c.isActive);
+                    if(active) window.activeCertUrl = active.url;
+                    else if(data.cert_gallery.length > 0) window.activeCertUrl = data.cert_gallery[0].url;
+                }
+                if(data.cert_name_config) window.certLayoutConfig = data.cert_name_config;
+                const certArea = document.getElementById('certCaptureArea');
+                if (certArea && window.activeCertUrl) certArea.style.backgroundImage = `url('${window.activeCertUrl}')`;
+            }
+
+            const cachedGroups = localStorage.getItem('classy_groups_' + currentCenterId);
+            if(cachedGroups) {
+                window.allGroupsData = JSON.parse(cachedGroups);
+                const groupFilter = document.getElementById("groupFilter");
+                if (groupFilter) {
+                    groupFilter.innerHTML = '<option value="">كل المجموعات</option>';
+                    window.allGroupsData.forEach(g => {
+                        let gName = g.group_name || g.name;
+                        groupFilter.innerHTML += `<option value="${g.id}">${gName}</option>`;
+                    });
+                }
+            }
+
+            const cachedStudents = localStorage.getItem('classy_students_' + currentCenterId);
+            if(cachedStudents) {
+                window.allStudentsData = JSON.parse(cachedStudents);
+                setTimeout(() => { if(typeof window.renderStudents === 'function') window.renderStudents(); }, 10);
+            }
+        });
+    </script>
+
+    <!-- الهيدر -->
+    <header class="top-header">
+        <div class="header-right">
+            <button class="menu-btn" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-arrow-right"></i></button>
+            <div class="profile-wrapper">
+                <div style="position: relative; display: inline-block;">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="profile-pic" id="headerTeacherPhoto">
+                    <div class="net-status" id="networkStatus"></div>
+                </div>
+            </div>
+            <div class="profile-info">
+                <h1 id="headerTeacherName"><span class="page-icon"><i class="fa-solid fa-chart-simple"></i></span> إدارة الدرجات</h1>
+                <p id="headerCenterName">رصد فوري وسجلات مطبوعة</p>
+            </div>
+        </div>
+        <div class="header-left"></div>
+    </header>
+
+    <div class="header-actions-row">
+        <button class="honor-board-btn" onclick="window.openHonorBoard()"><i class="fa-solid fa-trophy"></i> لوحة شرف المتفوقين</button>
+        <button class="settings-cert-btn" onclick="openCertManager()"><i class="fa-solid fa-image"></i> إدارة الشهادات</button>
+    </div>
+
+    <input type="file" id="certImageUploader" accept="image/*" style="display:none;" onchange="handleCertUpload(event)">
+
+    <div class="filters-card">
+        <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+            <div style="position: relative; flex: 2;">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #ffffff; font-size: 11px;"></i>
+                <input type="text" id="searchInput" class="form-input" placeholder="بحث باسم طالب أو كود..." oninput="resetPageAndRender()">
+            </div>
+            <div style="flex: 1;">
+                <select id="groupFilter" class="form-input" onchange="resetPageAndRender()"><option value="">كل المجموعات</option></select>
+            </div>
+        </div>
+        
+        <button class="ghost-filter-btn" id="ghostFilterBtn" onclick="toggleGhostFilter()">
+            <i class="fa-solid fa-ghost"></i> إظهار الطلاب (غير المرصودين اليوم) فقط
+        </button>
+        <button class="clear-records-btn" onclick="openClearHistoryModal()">
+            <i class="fa-solid fa-calendar-xmark"></i> مسح سجلات الاختبارات
+        </button>
+    </div>
+
+    <div class="progress-card">
+        <div class="progress-header">
+            <span style="color:#ffffff;"><i class="fa-solid fa-chart-pie"></i> مؤشر الإنجاز:</span>
+            <span id="progressTextRatio" style="color:#fff;">0 من 0 (0%)</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressBarFill"></div></div>
+        <div class="progress-stats">
+            <span id="progressRemaining" style="color: var(--btn-orange);">المتبقي: 0</span>
+            <span class="avg-badge" id="groupAverageBadge">متوسط: --</span>
+        </div>
+        <button class="bulk-grade-btn" onclick="bulkGradeRemaining()">
+            <i class="fa-solid fa-bolt"></i> رصد جماعي للطلاب المتبقيين
+        </button>
+    </div>
+
+    <div class="students-list" id="studentsListContainer"></div>
+    <div class="pagination-container" id="paginationContainer"></div>
+
+    <!-- ================= مودال الرصد المطور ================= -->
+    <div class="custom-modal-overlay" id="gradeModalOverlay">
+        <div class="grade-box">
+            <div class="gb-header">
+                <h3 class="gb-title"><i class="fa-solid fa-pen-to-square"></i> رصد تقييم الطالب</h3>
+                <button class="gb-close" onclick="closeGradeModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="gb-body">
+                <div class="gb-student-name" id="gmStudentName">اسم الطالب</div>
+                <input type="hidden" id="gmStudentBarcode">
+                
+                <div class="gb-date-wrap">
+                    <input type="date" id="gmDateInput" class="gb-date-input" onchange="if(window.verifyAttendanceForGrading) window.verifyAttendanceForGrading()">
+                </div>
+
+                <div class="gb-status-tabs">
+                    <button class="gb-tab active" data-val="tested" onclick="setStudentStatus('tested', this)">أدى الاختبار</button>
+                    <button class="gb-tab" data-val="absent" onclick="setStudentStatus('absent', this)">غائب</button>
+                    <button class="gb-tab" data-val="skipped" onclick="setStudentStatus('skipped', this)">تخطي</button>
+                </div>
+
+                <div id="gradingArea" class="gb-grading-area">
+                    <div class="gb-exam-types">
+                        <button class="gm-type-btn active" onclick="setExamType('درس', this)">درس</button>
+                        <button class="gm-type-btn" onclick="setExamType('وحدة', this)">وحدة</button>
+                        <button class="gm-type-btn" onclick="setExamType('شامل', this)">شامل</button>
+                    </div>
+                    
+                    <div class="gb-title-text">أدخل الدرجة يدوياً أو استخدم الأزرار السريعة</div>
+                    <div class="gb-input-row">
+                        <input type="number" id="gmMaxGrade" class="gm-input" value="20" oninput="generateQuickButtons()" placeholder="النهائية" onfocus="window.handleKeyboardScroll(this)" onblur="window.resetKeyboardScroll()">
+                        <span class="gm-slash">/</span>
+                        <input type="number" id="gmGradeValue" class="gm-input" placeholder="الدرجة" style="border-color: var(--btn-purple);" onfocus="window.handleKeyboardScroll(this)" onblur="window.resetKeyboardScroll()">
+                    </div>
+
+                    <label class="auto-next-wrap">
+                        <input type="checkbox" id="autoNextCheckbox" checked>
+                        <span>الزر الطائر (حفظ وانتقال تلقائي)</span>
+                    </label>
+
+                    <div class="quick-grades" id="quickGradesContainer"></div>
+                </div>
+
+                <button class="gm-save-btn" id="saveGradeBtn" onclick="saveGradeAndNext()">حفظ الدرجة والانتقال <i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- باقي النوافذ -->
+    <div id="printOverlayContainer">
+        <div class="print-toolbar">
+            <button class="pt-btn pt-btn-print" onclick="window.executeSystemPrint()"><i class="fa-solid fa-print"></i> طباعة الآن</button>
+            <button class="pt-btn pt-btn-pdf" onclick="window.executePDFDownload()"><i class="fa-solid fa-file-pdf"></i> تحميل PDF</button>
+            <button class="pt-btn pt-btn-close" onclick="window.closePrintOverlay()"><i class="fa-solid fa-xmark"></i> رجوع وإغلاق</button>
+        </div>
+        <div id="printPagesArea"></div>
+    </div>
+
+    <div class="gallery-modal-overlay" id="galleryModalOverlay">
+        <div style="background:var(--bg-dark); width:95%; max-width:400px; margin:auto; border-radius:12px; border:1px solid var(--border); display:flex; flex-direction:column; max-height:80vh;">
+            <div class="gallery-header">
+                <h3 class="gallery-title"><i class="fa-solid fa-images"></i> إدارة الشهادات</h3>
+                <button class="gallery-close" onclick="closeCertManager()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="gallery-body" id="galleryContainer"></div>
+            <div class="gallery-footer"><button class="btn-upload-new" onclick="document.getElementById('certImageUploader').click()"><i class="fa-solid fa-cloud-arrow-up"></i> رفع شهادة جديدة</button></div>
+        </div>
+    </div>
+
+    <div class="single-cert-overlay" id="singleCertModal">
+        <button onclick="closeExamCertificate()" data-html2canvas-ignore="true" style="position:absolute; top:40px; left:30px; background-color:#ef4444; color:#fff; border:3px solid #fff; border-radius:50%; width:45px; height:45px; font-size:24px; cursor:pointer; z-index:1000000; box-shadow:0 4px 10px rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; transition: 0.2s;"><i class="fa-solid fa-xmark"></i></button>
+        <div class="single-cert-box" id="certCaptureArea" style="background-image: url('https://www.transparenttextures.com/patterns/old-wall.png');"><div id="certDraggableName" style="left: 50%; top: 50%; font-size: 30px;">اسم الطالب</div></div>
+        <div class="cert-controls-panel" data-html2canvas-ignore="true">
+            <div class="cert-slider-row"><span>حجم الخط:</span><input type="range" id="fontSizeSlider" min="10" max="150" value="30" oninput="updateCertFontSize(this.value)"><button onclick="saveCertLayout()" style="background:var(--btn-orange); border:none; color:#000; padding:5px 10px; border-radius:5px; font-weight:bold; cursor:pointer; font-size:11px;">حفظ الأبعاد</button></div>
+            <div class="cert-btn-group"><button class="cert-btn" style="background:#3b82f6;" onclick="downloadCertImage()"><i class="fa-solid fa-download"></i> كصورة</button><button class="cert-btn" style="background:#25D366;" onclick="sendCertWhatsApp()"><i class="fa-brands fa-whatsapp"></i> إرسال</button></div>
+        </div>
+    </div>
+
+    <div class="secret-modal-overlay" id="secretRecordModal">
+        <div class="sm-header"><h3 class="sm-title"><i class="fa-solid fa-lock"></i> السجل السري للطالب</h3><button class="sm-close" onclick="closeSecretModal()"><i class="fa-solid fa-xmark"></i></button></div>
+        <div class="months-tabs" id="srMonthsTabs"></div>
+        <div class="sm-body">
+            <div class="report-paper" id="reportPaperContent">
+                <div style="font-weight:bold; font-size:14px; margin-bottom:10px; text-align:center; border-bottom:2px solid #000; padding-bottom:5px;">سجل تقييم الطالب: <span id="rpStudentName" style="color:var(--btn-blue);">...</span></div>
+                <div id="rpMonthTitle" style="text-align:center; font-weight:bold; margin-bottom:10px;"></div>
+                <table class="rp-table"><thead><tr><th>التاريخ</th><th>النوع</th><th>الحالة</th><th>الدرجة</th></tr></thead><tbody id="rpTableBody"></tbody></table>
+            </div>
+            <div class="sm-footer-actions"><button style="background:#3b82f6;" onclick="downloadSecretRecordAsImage()"><i class="fa-solid fa-download"></i> كصورة</button><button style="background:#ef4444;" onclick="printSecretRecord()"><i class="fa-solid fa-file-pdf"></i> طباعة / PDF</button><button style="background:#25D366;" onclick="sendSecretRecordWhatsApp()"><i class="fa-brands fa-whatsapp"></i> واتساب</button></div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-house"></i><span>الرئيسية</span></a>
+        <a href="groups.html" class="nav-item"><i class="fa-solid fa-layer-group"></i><span>الصفوف</span></a>
+        <a href="students.html" class="nav-item"><i class="fa-solid fa-users"></i><span>الطلاب</span></a>
+        <a href="grades.html" class="nav-item active"><i class="fa-solid fa-graduation-cap"></i><span>الدرجات</span></a>
+        <a href="behavior.html" class="nav-item"><i class="fa-solid fa-star"></i><span>السلوك</span></a>
+        <a href="financial.html" class="nav-item"><i class="fa-solid fa-money-bill-wave"></i><span>المالية</span></a>
+    </nav>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, collection } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCPFOwLEjtPWl89wZTbAqQoNVUmIVTkzEI", authDomain: "smart-center-saas-53d3e.firebaseapp.com", projectId: "smart-center-saas-53d3e",
+            storageBucket: "smart-center-saas-53d3e.firebasestorage.app", messagingSenderId: "59706619521", appId: "1:59706619521:web:aba7722ddf2073fceebf80"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        const currentCenterId = sessionStorage.getItem("activeCenterId");
+
+        window.allStudentsData = window.allStudentsData || []; 
+        window.allGroupsData = window.allGroupsData || [];
+        window.currentFilteredStudents = []; window.showUngradedOnly = false;
+        let currentPage = 1; const itemsPerPage = 20;
+        window.selectedExamType = 'درس'; window.selectedStudentStatus = 'tested'; 
+        window.currentOpenedStudentData = null; window.currentCertData = null; 
+        window.eliteStudentsForPrint = []; 
+        window.certGallery = window.certGallery || [];
+        window.activeCertUrl = window.activeCertUrl || 'https://www.transparenttextures.com/patterns/old-wall.png';
+        window.certLayoutConfig = window.certLayoutConfig || { x: 50, y: 50, size: 30 }; 
+
+        const getTodayFormatted = () => {
+            const d = new Date(); let month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+            if (month.length < 2) month = '0' + month; if (day.length < 2) day = '0' + day; return [year, month, day].join('-');
+        };
+
+        window.formatDateToArabic = function(dateStr) {
+            if (!dateStr) return ''; let d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr;
+            return d.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+        };
+
+        // ================= التمرير العنيف لصد لوحة المفاتيح =================
+        window.handleKeyboardScroll = function(element) {
+            const gbBody = document.querySelector('.gb-body');
+            if(gbBody) {
+                // ضخ مسافة قوية بأسفل النافذة
+                gbBody.style.paddingBottom = '350px'; 
+                // إجبار الشريط على النزول لأسفل مرتين عشان نتأكد إن المربع فوق الكيبورد
+                setTimeout(() => { gbBody.scrollTop = gbBody.scrollHeight; }, 100); 
+                setTimeout(() => { gbBody.scrollTop = gbBody.scrollHeight; }, 400); 
+            }
+        };
+
+        window.resetKeyboardScroll = function() {
+            const gbBody = document.querySelector('.gb-body');
+            if(gbBody) gbBody.style.paddingBottom = '0px';
+        };
+
+        function checkNetworkStatus() {
+            const statusDot = document.getElementById('networkStatus');
+            if(statusDot) {
+                if(navigator.onLine) { statusDot.style.backgroundColor = 'var(--btn-green)'; } else { statusDot.style.backgroundColor = 'var(--btn-red)'; }
+            }
+        }
+        window.addEventListener('online', checkNetworkStatus); window.addEventListener('offline', checkNetworkStatus);
+
+        onSnapshot(doc(db, "centers_auth", currentCenterId), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if(data.teacher_name) document.getElementById("headerTeacherName").innerHTML = `<span class="page-icon"><i class="fa-solid fa-chart-simple"></i></span> ${data.teacher_name}`;
+                if(data.teacher_photo) document.getElementById("headerTeacherPhoto").src = data.teacher_photo;
+                if(data.cert_gallery && Array.isArray(data.cert_gallery)) {
+                    window.certGallery = data.cert_gallery;
+                    let active = data.cert_gallery.find(c => c.isActive);
+                    if(active) window.activeCertUrl = active.url; else if(data.cert_gallery.length > 0) window.activeCertUrl = data.cert_gallery[0].url;
+                }
+                if(data.cert_name_config) window.certLayoutConfig = data.cert_name_config;
+                document.getElementById('certCaptureArea').style.backgroundImage = `url('${window.activeCertUrl}')`;
+            }
+        });
+
+        onSnapshot(collection(db, "centers", currentCenterId, "groups"), (snap) => {
+            window.allGroupsData = [];
+            const groupFilter = document.getElementById("groupFilter"); if(groupFilter) groupFilter.innerHTML = '<option value="">كل المجموعات</option>';
+            snap.forEach(d => {
+                const data = d.data(); window.allGroupsData.push({ id: d.id, name: data.group_name });
+                if(groupFilter) groupFilter.innerHTML += `<option value="${d.id}">${data.group_name}</option>`;
+            });
+            localStorage.setItem('classy_groups_' + currentCenterId, JSON.stringify(window.allGroupsData));
+            window.renderStudents();
+        });
+
+        onSnapshot(collection(db, "centers", currentCenterId, "students"), (snap) => {
+            window.allStudentsData = [];
+            snap.forEach(d => { let sData = d.data(); sData.grades = sData.grades || []; window.allStudentsData.push({ id: d.id, ...sData }); });
+            localStorage.setItem('classy_students_' + currentCenterId, JSON.stringify(window.allStudentsData));
+            window.renderStudents();
+        });
+
+        // ================= إدارة الشهادات ومعرض الصور =================
+        window.openCertManager = function() { renderGallery(); document.getElementById('galleryModalOverlay').classList.add('show'); }
+        window.closeCertManager = function() { document.getElementById('galleryModalOverlay').classList.remove('show'); }
+
+        function renderGallery() {
+            const container = document.getElementById('galleryContainer'); container.innerHTML = '';
+            if(window.certGallery.length === 0) { container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:gray; font-size:12px; margin-top:20px;">لا توجد شهادات.</div>'; return; }
+            window.certGallery.forEach((cert, index) => {
+                let activeClass = cert.isActive ? 'active-cert' : '';
+                container.innerHTML += `
+                    <div class="cert-thumb-card ${activeClass}">
+                        <img src="${cert.url}" class="cert-thumb-img">
+                        <div class="cert-thumb-actions">
+                            <button class="cert-thumb-btn btn-set-active" onclick="setCertActive(${index})"><i class="fa-solid fa-check"></i> ${cert.isActive ? 'نشط' : 'تعيين'}</button>
+                            <button class="cert-thumb-btn btn-del-cert" onclick="deleteCert(${index})"><i class="fa-solid fa-trash"></i> حذف</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        window.handleCertUpload = function(event) {
+            const file = event.target.files[0]; if(!file) return;
+            if(window.certGallery.length >= 5) { Swal.fire('تنبيه', 'الحد الأقصى 5 شهادات.', 'warning'); return; }
+            Swal.fire({title: 'جاري الرفع...', didOpen: () => Swal.showLoading()});
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image(); img.src = e.target.result;
+                img.onload = function() {
+                    const canvas = document.createElement('canvas'); const MAX_WIDTH = 1000; const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize;
+                    const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6); 
+                    let newGallery = [...window.certGallery]; newGallery.forEach(c => c.isActive = false); newGallery.push({ url: compressedBase64, isActive: true });
+                    updateDoc(doc(db, "centers_auth", currentCenterId), { cert_gallery: newGallery }).then(() => { Swal.fire({toast:true, position:'top', icon:'success', title:'تم الرفع', showConfirmButton:false, timer:1500}); renderGallery(); });
+                }
+            }; reader.readAsDataURL(file);
+        }
+
+        window.setCertActive = function(index) {
+            let newGallery = [...window.certGallery]; newGallery.forEach(c => c.isActive = false); newGallery[index].isActive = true;
+            updateDoc(doc(db, "centers_auth", currentCenterId), { cert_gallery: newGallery }).then(() => { renderGallery(); });
+        }
+
+        window.deleteCert = function(index) {
+            Swal.fire({title:'حذف؟', showCancelButton:true, confirmButtonColor:'#ef4444'}).then(r => {
+                if(r.isConfirmed) {
+                    let newGallery = [...window.certGallery]; newGallery.splice(index, 1);
+                    if(newGallery.length > 0 && !newGallery.find(c => c.isActive)) newGallery[0].isActive = true;
+                    updateDoc(doc(db, "centers_auth", currentCenterId), { cert_gallery: newGallery }).then(() => { renderGallery(); });
+                }
+            });
+        }
+
+        // ================= مسح السجلات الذكية =================
+        window.openClearHistoryModal = function() {
+            let gOpts = window.allGroupsData.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+            Swal.fire({
+                title: 'إدارة سجلات (الدرجات)',
+                html: `
+                    <div style="text-align:right; font-family:'Cairo'; padding: 5px;">
+                        <div id="clearErrorMsg" class="modal-error-msg"></div>
+                        <div style="background:#1e293b; padding:15px; border-radius:8px; border:1px solid #334155; margin-bottom:15px;">
+                            <h4 style="color:#ef4444; font-size:12px; margin-bottom:10px; font-weight:bold;"><i class="fa-solid fa-calendar-xmark"></i> مسح سجلات مجموعة بتاريخ محدد</h4>
+                            <select id="clearGrpInput" class="form-input" style="margin-bottom:8px; font-weight:bold; font-size:11px;"><option value="">- اختر المجموعة -</option>${gOpts}</select>
+                            <label style="display:block; text-align:right; font-size:10px; color:#cbd5e1; margin-bottom:4px; font-weight:bold;">اختر التاريخ:</label>
+                            <input type="date" id="clearDateInput" class="form-input" style="margin-bottom:10px; font-weight:bold; background:#fff !important; color:#000 !important; font-size:11px;">
+                            <button onclick="executeClearByDate()" style="width:100%; background:#ef4444; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; font-size:11px; cursor:pointer;"><i class="fa-solid fa-trash"></i> مسح بتاريخ التحديد</button>
+                        </div>
+                        <div style="background:#1e293b; padding:15px; border-radius:8px; border:1px solid #334155;">
+                            <h4 style="color:#fbbf24; font-size:12px; margin-bottom:10px; font-weight:bold;"><i class="fa-solid fa-user-slash"></i> تصفير سجل طالب بالكامل</h4>
+                            <input type="text" id="searchDeleteStudent" class="form-input" placeholder="ابحث باسم الطالب أو الكود..." onkeyup="filterDeleteList()" style="margin-bottom:8px; font-size:11px;">
+                            <div id="deleteStudentList" class="clear-list-wrapper"></div>
+                            <input type="hidden" id="selectedDeleteStudentCode">
+                            <button onclick="executeClearStudent()" style="width:100%; background:#f59e0b; color:black; border:none; padding:8px; border-radius:6px; font-weight:bold; font-size:11px; cursor:pointer;"><i class="fa-solid fa-eraser"></i> تصفير سجل الطالب المحدد</button>
+                        </div>
+                    </div>
+                `,
+                showConfirmButton: false, showCloseButton: true, didOpen: () => { filterDeleteList(); }
+            });
+        }
+
+        window.filterDeleteList = function() {
+            const q = document.getElementById('searchDeleteStudent').value.trim().toLowerCase(); const listDiv = document.getElementById('deleteStudentList'); if(!listDiv) return; listDiv.innerHTML = '';
+            let filtered = window.allStudentsData.filter(s => s.student_name.toLowerCase().includes(q) || s.barcode.includes(q)).slice(0, 20); 
+            if(filtered.length === 0) { listDiv.innerHTML = '<div style="color:gray; font-size:10px; text-align:center; padding:10px;">لا يوجد نتائج</div>'; return; }
+            filtered.forEach(s => {
+                let item = document.createElement('div'); item.className = 'clear-stu-item'; item.innerText = `${s.student_name} (${s.barcode})`;
+                item.onclick = function() { document.querySelectorAll('.clear-stu-item').forEach(el => el.classList.remove('selected')); this.classList.add('selected'); document.getElementById('selectedDeleteStudentCode').value = s.barcode; };
+                listDiv.appendChild(item);
+            });
+        }
+
+        window.executeClearByDate = async function() {
+            const groupId = document.getElementById('clearGrpInput').value; const dateInput = document.getElementById('clearDateInput').value;
+            const errorMsg = document.getElementById('clearErrorMsg');
+            if(!groupId || !dateInput) { errorMsg.innerText = 'يرجى تحديد المجموعة والتاريخ أولاً!'; return; } errorMsg.innerText = '';
+            const arabicDate = window.formatDateToArabic(dateInput);
+            Swal.fire({ title: 'تأكيد المسح', text: `سيتم مسح درجات المجموعة للتاريخ المحدد.`, icon: 'warning', showCancelButton: true, confirmButtonText: 'نعم، امسح', cancelButtonText: 'إلغاء', confirmButtonColor: '#ef4444' }).then(async (result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({title: 'جاري المسح...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+                    try {
+                        let studentsInGroup = window.allStudentsData.filter(s => s.group_id === groupId); let promises = [];
+                        for (let stu of studentsInGroup) {
+                            if (stu.grades && stu.grades.length > 0) {
+                                let newGrades = stu.grades.filter(h => h.iso_date !== dateInput && h.date !== arabicDate);
+                                if(newGrades.length !== stu.grades.length) { promises.push(updateDoc(doc(db, "centers", currentCenterId, "students", stu.barcode), { grades: newGrades })); }
+                            }
+                        }
+                        await Promise.all(promises); Swal.fire({icon: 'success', title: 'تم المسح بنجاح!', timer: 1500, showConfirmButton: false});
+                    } catch(e) { Swal.fire('خطأ', 'حدث خطأ أثناء الاتصال', 'error'); }
+                }
+            });
+        }
+
+        window.executeClearStudent = async function() {
+            const barcode = document.getElementById('selectedDeleteStudentCode').value; const errorMsg = document.getElementById('clearErrorMsg');
+            if(!barcode) { errorMsg.innerText = 'يجب اختيار طالب من القائمة أولاً!'; return; } errorMsg.innerText = '';
+            Swal.fire({ title: 'تصفير السجل', text: `سيتم مسح درجات الطالب بالكامل.`, icon: 'warning', showCancelButton: true, confirmButtonText: 'نعم، صفر', cancelButtonText: 'إلغاء', confirmButtonColor: '#ef4444' }).then(async (result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({title: 'جاري التصفير...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+                    try {
+                        await updateDoc(doc(db, "centers", currentCenterId, "students", barcode), { grades: [] });
+                        Swal.fire({icon: 'success', title: 'تم التصفير بنجاح!', timer: 1500, showConfirmButton: false}); document.getElementById('searchDeleteStudent').value = ''; filterDeleteList();
+                    } catch(e) { Swal.fire('خطأ', 'حدث خطأ أثناء الاتصال', 'error'); }
+                }
+            });
+        }
+
+        // ================= الريندر ونظام الصفحات =================
+        window.toggleGhostFilter = function() {
+            window.showUngradedOnly = !window.showUngradedOnly;
+            const btn = document.getElementById("ghostFilterBtn");
+            if(window.showUngradedOnly) { btn.classList.add("active"); btn.innerHTML = `<i class="fa-solid fa-ghost"></i> إظهار الكل`; } 
+            else { btn.classList.remove("active"); btn.innerHTML = `<i class="fa-solid fa-ghost"></i> إظهار الطلاب (غير المرصودين اليوم) فقط`; }
+            currentPage = 1; window.renderStudents();
+        }
+
+        window.resetPageAndRender = function() { currentPage = 1; window.renderStudents(); }
+
+        function isGradedOnDate(student, dateStr) {
+            if(!student.grades || student.grades.length === 0) return false;
+            return student.grades.some(g => g.iso_date === dateStr || g.date === window.formatDateToArabic(dateStr));
+        }
+
+        window.renderStudents = function() {
+            if(window.allStudentsData.length === 0) return;
+            const q = document.getElementById("searchInput").value.trim().toLowerCase();
+            const grp = document.getElementById("groupFilter") ? document.getElementById("groupFilter").value : "";
+            const list = document.getElementById("studentsListContainer"); if(!list) return;
+            const checkDate = document.getElementById('gmDateInput') ? document.getElementById('gmDateInput').value : getTodayFormatted();
+            const arabicCheckDate = window.formatDateToArabic(checkDate);
+            
+            let baseFiltered = window.allStudentsData.filter(s => {
+                const matchQ = s.student_name.toLowerCase().includes(q) || s.barcode.includes(q);
+                const matchGrp = grp ? s.group_id === grp : true;
+                return matchQ && matchGrp && !s.is_suspended; 
+            });
+
+            let totalInGroup = baseFiltered.length; let gradedCount = 0; let totalScores = 0; let totalMax = 0;
+            baseFiltered.forEach(s => {
+                let rec = s.grades.find(g => g.iso_date === checkDate || g.date === arabicCheckDate);
+                if(rec) {
+                    gradedCount++;
+                    if(rec.status === 'tested' && rec.grade !== undefined) { totalScores += rec.grade; totalMax += rec.max; }
+                }
+            });
+
+            let progressRatio = totalInGroup > 0 ? Math.round((gradedCount / totalInGroup) * 100) : 0;
+            let remaining = totalInGroup - gradedCount;
+            let avgText = "--"; if(totalMax > 0) { let avgPercent = Math.round((totalScores / totalMax) * 100); avgText = `${avgPercent}%`; }
+
+            const textRatio = document.getElementById("progressTextRatio"); if(textRatio) textRatio.innerText = `تم رصد ${gradedCount} من ${totalInGroup} (${progressRatio}%)`;
+            const barFill = document.getElementById("progressBarFill"); if(barFill) barFill.style.width = `${progressRatio}%`;
+            const progRem = document.getElementById("progressRemaining"); if(progRem) progRem.innerText = `المتبقي: ${remaining}`;
+            const avgBadge = document.getElementById("groupAverageBadge"); if(avgBadge) avgBadge.innerHTML = `<i class="fa-solid fa-chart-line"></i> متوسط: ${avgText}`;
+
+            if(window.showUngradedOnly) { window.currentFilteredStudents = baseFiltered.filter(s => !isGradedOnDate(s, checkDate)); } 
+            else { window.currentFilteredStudents = baseFiltered; }
+
+            const totalPages = Math.ceil(window.currentFilteredStudents.length / itemsPerPage);
+            if(currentPage > totalPages) currentPage = totalPages || 1;
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedStudents = window.currentFilteredStudents.slice(startIndex, endIndex);
+
+            list.innerHTML = "";
+            if(window.currentFilteredStudents.length === 0) {
+                list.innerHTML = `<div style="text-align:center; color:#ffffff; padding:20px; font-weight:bold; font-size:12px;">لا يوجد طلاب مطابقين للبحث.</div>`;
+                renderPagination(0); return;
+            }
+
+            paginatedStudents.forEach(s => {
+                let isGraded = isGradedOnDate(s, checkDate);
+                let gradeStatusHtml = '';
+                if(isGraded) {
+                    let rec = s.grades.find(g => g.iso_date === checkDate || g.date === arabicCheckDate);
+                    if(rec.status === 'absent') { gradeStatusHtml = `<div class="sc-grade-status absent"><i class="fa-solid fa-user-xmark"></i> سجل غياب للاختبار</div>`; } 
+                    else if(rec.status === 'skipped') { gradeStatusHtml = `<div class="sc-grade-status skipped"><i class="fa-solid fa-forward-step"></i> تم التخطي بدون اختبار</div>`; } 
+                    else { gradeStatusHtml = `<div class="sc-grade-status graded"><i class="fa-solid fa-check-double"></i> الدرجة: ${rec.grade} / ${rec.max}</div>`; }
+                } else { gradeStatusHtml = `<div class="sc-grade-status"><i class="fa-regular fa-clock"></i> لم يتم الرصد اليوم</div>`; }
+
+                list.innerHTML += `
+                    <div class="student-card" id="card_${s.barcode}">
+                        <div class="sc-header">
+                            <div class="sc-info-wrap">
+                                <div class="sc-avatar">${s.student_name.charAt(0)}</div>
+                                <div class="sc-details">
+                                    <h4 class="sc-name">${s.student_name}</h4>
+                                    <div class="sc-meta"><span class="sc-group-badge">${s.group_name || 'بدون'}</span><span class="sc-code-badge">كود: ${s.barcode}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        ${gradeStatusHtml}
+                        <div class="sc-actions">
+                            <button class="btn-action btn-grade" onclick="openGradeModal('${s.barcode}')"><i class="fa-solid fa-pen-to-square"></i> رصد</button>
+                            <button class="btn-action btn-manage" onclick="openManageGrades('${s.barcode}')"><i class="fa-solid fa-sliders"></i> إدارة</button>
+                            <button class="btn-action btn-history" onclick="openSecretRecord('${s.barcode}')"><i class="fa-solid fa-lock"></i> سجل</button>
+                        </div>
+                    </div>`;
+            });
+            renderPagination(totalPages);
+        }
+
+        window.renderPagination = function(totalPages) {
+            const container = document.getElementById("paginationContainer"); if(!container) return; container.innerHTML = "";
+            if(totalPages <= 1) return;
+            for(let i = 1; i <= totalPages; i++) { container.innerHTML += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`; }
+        }
+        window.changePage = function(page) { currentPage = page; window.renderStudents(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+        // ================= الرصد الجماعي الذكي المعتمد على الحضور =================
+        window.bulkGradeRemaining = async function() {
+            let checkDate = document.getElementById('gmDateInput') ? document.getElementById('gmDateInput').value : getTodayFormatted();
+            let arabicCheckDate = window.formatDateToArabic(checkDate);
+            const activeGrp = document.getElementById("groupFilter") ? document.getElementById("groupFilter").value : "";
+            
+            let remainingStudents = window.allStudentsData.filter(s => {
+                const matchGrp = activeGrp ? s.group_id === activeGrp : true;
+                return matchGrp && !s.is_suspended && !isGradedOnDate(s, checkDate);
+            });
+
+            if(remainingStudents.length === 0) { Swal.fire('تنبيه', 'لا يوجد طلاب متبقيين للرصد.', 'info'); return; }
+
+            const { value: formValues } = await Swal.fire({
+                title: 'رصد جماعي ذكي',
+                html: `
+                    <p style="font-size:12px; color:#ffffff; margin-bottom:15px; font-weight:bold;">سيتم رصد الدرجة لعدد <b>(${remainingStudents.length})</b> طالب (مع مراعاة حالة حضورهم).</p>
+                    <input id="swal-bulk-grade" type="number" class="form-input" placeholder="الدرجة الحاصلين عليها" style="margin-bottom:10px;">
+                    <input id="swal-bulk-max" type="number" class="form-input" placeholder="الدرجة النهائية" value="20">
+                `,
+                showCancelButton: true, confirmButtonText: 'إعطاء الدرجة', confirmButtonColor: '#10b981', cancelButtonText: 'إلغاء',
+                preConfirm: () => {
+                    let g = document.getElementById('swal-bulk-grade').value; let m = document.getElementById('swal-bulk-max').value;
+                    if(!g || !m) { Swal.showValidationMessage('برجاء إدخال الدرجة والدرجة النهائية!'); return false; }
+                    if(Number(g) > Number(m)) { Swal.showValidationMessage('الدرجة لا يمكن أن تتجاوز النهائية!'); return false; }
+                    return [g, m];
+                }
+            });
+
+            if (formValues) {
+                Swal.fire({toast:true, position:'top', icon:'success', title:'جاري الرصد في الخلفية...', showConfirmButton:false, timer:2000});
+                setTimeout(async () => {
+                    for (let s of remainingStudents) {
+                        let historyRecord = (s.history || []).find(h => h.iso_date === checkDate || h.date === arabicCheckDate);
+                        let stuStatus = 'tested';
+                        let stuGrade = Number(formValues[0]);
+                        let stuMax = Number(formValues[1]);
+
+                        if (!historyRecord || historyRecord.att === 'none') {
+                            continue; 
+                        } else if (historyRecord.att === 'absent') {
+                            stuStatus = 'absent';
+                        }
+
+                        let record = { date: arabicCheckDate, iso_date: checkDate, type: 'درس', status: stuStatus };
+                        if(stuStatus === 'tested') { record.grade = stuGrade; record.max = stuMax; }
+
+                        let gradesArr = s.grades || [];
+                        let existingIndex = gradesArr.findIndex(g => g.iso_date === checkDate || g.date === arabicCheckDate);
+                        if(existingIndex >= 0) gradesArr[existingIndex] = record; else gradesArr.push(record);
+                        await updateDoc(doc(db, "centers", currentCenterId, "students", s.barcode), { grades: gradesArr });
+                    }
+                }, 50);
+            }
+        }
+
+        // ================= التحقق التام والصارم من حضور الطالب قبل الرصد =================
+        window.verifyAttendanceForGrading = function() {
+            const barcode = document.getElementById("gmStudentBarcode").value;
+            const s = window.allStudentsData.find(x => x.barcode === barcode);
+            if(!s) return;
+            
+            const selectedDate = document.getElementById("gmDateInput").value;
+            const arabicSelectedDate = window.formatDateToArabic(selectedDate);
+            const historyRecord = (s.history || []).find(h => h.iso_date === selectedDate || h.date === arabicSelectedDate);
+            
+            const gradingArea = document.getElementById("gradingArea");
+            const saveBtn = document.getElementById("saveGradeBtn");
+            const tabs = document.querySelectorAll(".gb-tab");
+            const gradeInput = document.getElementById("gmGradeValue");
+            const maxInput = document.getElementById("gmMaxGrade");
+            
+            if(gradingArea) gradingArea.style.display = 'flex';
+            if(saveBtn) { saveBtn.disabled = false; saveBtn.style.opacity = '1'; }
+            if(gradeInput) { gradeInput.disabled = false; gradeInput.readOnly = false; }
+            if(maxInput) { maxInput.disabled = false; maxInput.readOnly = false; }
+            tabs.forEach(t => { t.disabled = false; t.style.cursor = 'pointer'; t.style.opacity = '0.6'; });
+            
+            const activeTab = document.querySelector(".gb-tab.active");
+            if(activeTab) activeTab.style.opacity = '1';
+
+            if (!historyRecord || historyRecord.att === 'none') {
+                if(gradingArea) gradingArea.style.display = 'none';
+                if(saveBtn) { saveBtn.disabled = true; saveBtn.style.opacity = '0.5'; }
+                tabs.forEach(t => t.classList.remove("active"));
+                Swal.fire({toast: true, position: 'top', icon: 'error', title: '<span style="color:#fff">غير مسجل بالغرفة!</span>', html: '<span style="color:#fff">روح حضر الطالب الأول.</span>', background: '#ef4444', showConfirmButton: false, timer: 3000});
+            } else if (historyRecord.att === 'absent') {
+                setStudentStatus('absent', document.querySelector(".gb-tab[data-val='absent']"));
+                tabs.forEach(t => { if(t.dataset.val !== 'absent') { t.disabled = true; t.style.cursor = 'not-allowed'; } });
+                
+                if(gradeInput) { gradeInput.disabled = true; gradeInput.readOnly = true; }
+                if(maxInput) { maxInput.disabled = true; maxInput.readOnly = true; }
+                if(saveBtn) { saveBtn.disabled = true; saveBtn.style.opacity = '0.5'; }
+                
+                Swal.fire({toast: true, position: 'top', icon: 'warning', title: '<span style="color:#fff">الطالب غائب!</span>', html: '<span style="color:#fff">خد بالك إن الطالب ده كان غايب (تم قفل الدرجة).</span>', background: '#f59e0b', showConfirmButton: false, timer: 3000});
+            } else {
+                if(window.selectedStudentStatus === 'absent' || !document.querySelector(".gb-tab.active")) {
+                    setStudentStatus('tested', document.querySelector(".gb-tab[data-val='tested']"));
+                } else {
+                    setStudentStatus(window.selectedStudentStatus, document.querySelector(`.gb-tab[data-val='${window.selectedStudentStatus}']`));
+                }
+            }
+        };
+
+        // ================= فتح مودال الرصد =================
+        window.openGradeModal = function(barcode, editRecord = null) {
+            const s = window.allStudentsData.find(x => x.barcode === barcode);
+            if(!s) return;
+            window.currentOpenedStudentData = s;
+            document.getElementById("gmStudentBarcode").value = barcode;
+            document.getElementById("gmStudentName").innerText = s.student_name;
+            document.getElementById("gmGradeValue").value = "";
+
+            if (editRecord) {
+                document.getElementById("gmDateInput").value = editRecord.iso_date || getTodayFormatted();
+                document.getElementById("gmMaxGrade").value = editRecord.max || 20;
+                document.getElementById("gmGradeValue").value = editRecord.grade !== undefined ? editRecord.grade : "";
+                
+                document.querySelectorAll(".gb-tab").forEach(b => b.classList.remove("active"));
+                let statusBtn = document.querySelector(`.gb-tab[data-val='${editRecord.status}']`);
+                if(statusBtn) setStudentStatus(editRecord.status, statusBtn);
+
+                document.querySelectorAll(".gm-type-btn").forEach(b => b.classList.remove("active"));
+                let typeBtns = Array.from(document.querySelectorAll(".gm-type-btn"));
+                let targetTypeBtn = typeBtns.find(b => b.innerText.includes(editRecord.type));
+                if(targetTypeBtn) setExamType(editRecord.type, targetTypeBtn);
+            } else {
+                document.getElementById("gmDateInput").value = getTodayFormatted();
+                if(s.grades && s.grades.length > 0) {
+                    let lastExam = s.grades[s.grades.length - 1];
+                    if(lastExam.max) document.getElementById("gmMaxGrade").value = lastExam.max;
+                }
+                document.querySelectorAll(".gb-tab").forEach(b => b.classList.remove("active"));
+                document.querySelector(".gb-tab[data-val='tested']").classList.add("active");
+                setStudentStatus('tested', document.querySelector(".gb-tab[data-val='tested']"));
+            }
+            
+            generateQuickButtons();
+            document.getElementById("gradeModalOverlay").classList.add("show");
+            
+            window.verifyAttendanceForGrading();
+        }
+
+        window.closeGradeModal = function() { document.getElementById("gradeModalOverlay").classList.remove("show"); window.resetKeyboardScroll(); }
+        window.setExamType = function(type, btnElement) { window.selectedExamType = type; document.querySelectorAll(".gm-type-btn").forEach(b => b.classList.remove("active")); btnElement.classList.add("active"); }
+        
+        window.setStudentStatus = function(status, btnElement) {
+            window.selectedStudentStatus = status; 
+            document.querySelectorAll(".gb-tab").forEach(b => { b.classList.remove("active"); b.style.opacity = '0.6'; }); 
+            if(btnElement) { btnElement.classList.add("active"); btnElement.style.opacity = '1'; }
+            const gradingArea = document.getElementById("gradingArea");
+            if(!gradingArea) return;
+            if(status === 'absent' || status === 'skipped') { gradingArea.style.display = 'none'; } else { gradingArea.style.display = 'flex'; generateQuickButtons(); }
+        }
+
+        window.generateQuickButtons = function() {
+            const max = parseInt(document.getElementById("gmMaxGrade").value) || 20; const cont = document.getElementById("quickGradesContainer"); if(!cont) return; cont.innerHTML = '';
+            for(let i = 0; i <= max; i++) { 
+                cont.innerHTML += `<button class="qg-btn" onclick="document.getElementById('gmGradeValue').value=${i}; saveGradeAndNext()">${i}</button>`; 
+            }
+        }
+
+        window.saveGradeAndNext = async function() {
+            const barcode = document.getElementById("gmStudentBarcode").value;
+            const stu = window.allStudentsData.find(s => s.barcode === barcode); if(!stu) return;
+            const isoDate = document.getElementById("gmDateInput").value;
+            const arabicDate = window.formatDateToArabic(isoDate);
+            let finalGrade = document.getElementById("gmGradeValue").value;
+            let maxGrade = document.getElementById("gmMaxGrade").value;
+
+            if(window.selectedStudentStatus === 'tested') {
+                if(finalGrade === "") { Swal.fire({toast:true, position:'top', icon:'warning', title:'برجاء كتابة الدرجة!', showConfirmButton:false, timer:2000}); return; }
+                if(Number(finalGrade) > Number(maxGrade)) { Swal.fire({toast:true, position:'top', icon:'error', title:'خطأ: الدرجة أكبر من النهائية!', showConfirmButton:false, timer:2000}); return; }
+            }
+
+            let gradesArr = stu.grades || [];
+            let record = { date: arabicDate, iso_date: isoDate, type: window.selectedExamType, status: window.selectedStudentStatus };
+            if(window.selectedStudentStatus === 'tested') { record.grade = Number(finalGrade); record.max = Number(maxGrade); }
+
+            let existingIndex = gradesArr.findIndex(g => g.iso_date === isoDate || g.date === arabicDate);
+            if(existingIndex >= 0) { gradesArr[existingIndex] = record; } else { gradesArr.push(record); }
+
+            await updateDoc(doc(db, "centers", currentCenterId, "students", barcode), { grades: gradesArr });
+            Swal.fire({toast:true, position:'top', icon:'success', title:`تم الحفظ للطالب بنجاح`, showConfirmButton:false, timer:800});
+
+            if(document.getElementById("autoNextCheckbox").checked) {
+                let currentIndex = window.currentFilteredStudents.findIndex(x => x.barcode === barcode);
+                if(currentIndex >= 0 && currentIndex < window.currentFilteredStudents.length - 1) {
+                    let nextStudent = window.currentFilteredStudents[currentIndex + 1];
+                    setTimeout(() => openGradeModal(nextStudent.barcode), 100);
+                } else {
+                    closeGradeModal();
+                    Swal.fire({ title: 'انتهت القائمة!', text: 'تم الانتهاء من جميع الطلاب المعروضين.', icon: 'success', confirmButtonColor: '#10b981' });
+                }
+            } else {
+                closeGradeModal();
+            }
+        }
+
+        // ================= إدارة الدرجات بالتبويبات =================
+        window.openManageGrades = function(barcode) {
+            const s = window.allStudentsData.find(x => x.barcode === barcode);
+            if(!s) return;
+            if(!s.grades || s.grades.length === 0) { Swal.fire('تنبيه', 'لا يوجد سجل درجات لهذا الطالب.', 'info'); return; }
+            
+            let groupedGrades = {};
+            const now = new Date();
+            const currentMonthName = now.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+            groupedGrades[currentMonthName] = [];
+
+            [...s.grades].reverse().forEach((g, idx) => {
+                let monthName = "تاريخ غير معروف";
+                if(g.iso_date) {
+                    let parts = g.iso_date.split('-');
+                    if (parts.length >= 2) {
+                        let d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1);
+                        if (!isNaN(d.getTime())) monthName = d.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+                    }
+                }
+                if(!groupedGrades[monthName]) groupedGrades[monthName] = [];
+                let originalIndex = s.grades.length - 1 - idx;
+                groupedGrades[monthName].push({ ...g, originalIndex });
+            });
+
+            window.currentOpenedManageBarcode = barcode;
+            window.currentGroupedGrades = groupedGrades;
+
+            let tabsHtml = `<div class="months-tabs" style="display: flex; gap: 6px; overflow-x: auto; padding: 5px; border-bottom: 1px solid var(--border); margin-bottom: 10px;">`;
+            Object.keys(groupedGrades).forEach((monthKey, index) => {
+                if(groupedGrades[monthKey].length > 0 || monthKey === currentMonthName) {
+                    tabsHtml += `<button class="month-btn ${index === 0 ? 'active' : ''}" onclick="window.switchManageGradesMonth('${monthKey}', this)" style="flex:0 0 auto;">${monthKey}</button>`;
+                }
+            });
+            tabsHtml += `</div>`;
+
+            let html = `
+            <div style="text-align: right; padding:5px; font-family:'Cairo'; position:relative;">
+                <button onclick="Swal.close()" style="position: absolute; top: -5px; left: -5px; background: #ef4444; color: white; width: 32px; height: 32px; border-radius: 50%; border: none; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4); z-index: 10000;"><i class="fa-solid fa-xmark"></i></button>
+                <h3 style="color: #fff; font-weight: 900; margin: 0 0 10px 0; text-align: center; padding-left: 35px;"><i class="fa-solid fa-user-graduate" style="color: var(--btn-purple);"></i> ${s.student_name}</h3>
+                ${tabsHtml}
+                <div id="manageGradesListBody" style="max-height:50vh; overflow-y:auto; padding-right:5px;"></div>
+            </div>`;
+            
+            Swal.fire({
+                html: html, showConfirmButton: false, showCloseButton: false, background: '#1a1f2c',
+                didOpen: () => {
+                    const availableMonths = Object.keys(groupedGrades);
+                    if(availableMonths.length > 0) window.switchManageGradesMonth(availableMonths[0]);
+                }
+            });
+        }
+
+        window.switchManageGradesMonth = function(monthKey, btnElement = null) {
+            if(btnElement) {
+                const parent = btnElement.parentElement;
+                parent.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+                btnElement.classList.add('active');
+            }
+            const container = document.getElementById("manageGradesListBody"); if(!container) return; container.innerHTML = "";
+            
+            const records = window.currentGroupedGrades[monthKey] || [];
+            if(records.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:gray; padding:20px; font-size:12px;">لا توجد درجات مرصودة في هذا الشهر بعد.</div>`;
+                return;
+            }
+
+            records.forEach(g => {
+                let statusText = g.status === 'absent' ? '<span style="color:#ef4444; font-weight:bold;">غائب</span>' : (g.status === 'skipped' ? '<span style="color:#f59e0b; font-weight:bold;">لم يختبر</span>' : `<span style="color:#10b981; font-weight:bold;">${g.grade} / ${g.max}</span>`);
+                container.innerHTML += `
+                    <div style="background:#121826; padding:10px; border-radius:8px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border);">
+                        <div style="font-size:12px;">
+                            <div style="color:#ffffff; font-weight:900;">${g.date} (${g.type})</div><div style="margin-top:5px;">${statusText}</div>
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <button onclick="window.editGradeRecord('${window.currentOpenedManageBarcode}', ${g.originalIndex})" style="background:rgba(59, 130, 246, 0.15); border:1px solid #3b82f6; color:#3b82f6; padding:6px 12px; border-radius:8px; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="window.deleteGradeRecord('${window.currentOpenedManageBarcode}', ${g.originalIndex})" style="background:rgba(239, 68, 68, 0.15); border:1px solid #ef4444; color:#ef4444; padding:6px 12px; border-radius:8px; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        window.editGradeRecord = function(barcode, index) { Swal.close(); setTimeout(() => { const s = window.allStudentsData.find(x => x.barcode === barcode); const record = s.grades[index]; if(record) { openGradeModal(barcode, record); } }, 300); }
+        window.deleteGradeRecord = async function(barcode, index) {
+            Swal.fire({ title: 'تأكيد الحذف', text: 'هل أنت متأكد من مسح سجل هذا الاختبار؟', icon: 'error', showCancelButton: true, confirmButtonText: 'احذف', confirmButtonColor: '#ef4444', cancelButtonText: 'إلغاء' }).then(async (r) => {
+                if(r.isConfirmed) {
+                    const s = window.allStudentsData.find(x => x.barcode === barcode); let arr = s.grades; arr.splice(index, 1);
+                    await updateDoc(doc(db, "centers", currentCenterId, "students", barcode), { grades: arr });
+                    Swal.fire({toast:true, position:'top', icon:'success', title:'تم الحذف', showConfirmButton:false, timer:1000});
+                    setTimeout(() => openManageGrades(barcode), 1000);
+                }
+            });
+        }
+
+        // ================= السجل السري الشهري =================
+        window.openSecretRecord = function(barcode) {
+            const s = window.allStudentsData.find(x => x.barcode === barcode);
+            window.currentOpenedStudentData = s; document.getElementById("rpStudentName").innerText = s.student_name;
+            const tabsContainer = document.getElementById("srMonthsTabs"); if(!tabsContainer) return; tabsContainer.innerHTML = '';
+            
+            if(!s.grades || s.grades.length === 0) {
+                document.getElementById("rpMonthTitle").innerText = "";
+                document.getElementById("rpTableBody").innerHTML = `<tr><td colspan="4" style="padding:15px; color:gray; font-weight:bold;">لا يوجد سجل درجات للطالب حتى الآن</td></tr>`;
+                document.getElementById("secretRecordModal").classList.add("show"); return;
+            }
+
+            let monthsSet = new Set();
+            s.grades.forEach(g => { 
+                if(g.iso_date) { monthsSet.add(g.iso_date.substring(0, 7)); } 
+                else if(g.date) {
+                    let parts = g.date.split(' '); if(parts.length >= 3) { monthsSet.add(parts[1] + " " + parts[2]); }
+                }
+            });
+            let monthsArr = Array.from(monthsSet).sort().reverse(); 
+
+            monthsArr.forEach((monthKey, index) => {
+                let monthName = monthKey;
+                if(monthKey.includes('-')) {
+                    let parts = monthKey.split('-'); if(parts.length === 2) {
+                        let d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1);
+                        if (!isNaN(d.getTime())) monthName = d.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+                    }
+                }
+                tabsContainer.innerHTML += `<button class="month-btn ${index === 0 ? 'active' : ''}" onclick="loadMonthReport('${monthKey}', '${monthName}', this)">${monthName}</button>`;
+            });
+
+            if(monthsArr.length > 0) {
+                let firstMonthKey = monthsArr[0]; let firstMonthName = firstMonthKey;
+                if(firstMonthKey.includes('-')) {
+                    let firstParts = firstMonthKey.split('-'); if(firstParts.length === 2) {
+                        let df = new Date(parseInt(firstParts[0]), parseInt(firstParts[1]) - 1, 1);
+                        if (!isNaN(df.getTime())) firstMonthName = df.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+                    }
+                }
+                loadMonthReport(firstMonthKey, firstMonthName);
+            }
+            document.getElementById("secretRecordModal").classList.add("show");
+        }
+
+        window.loadMonthReport = function(monthKey, monthNameText, btnElement = null) {
+            if(btnElement) { document.querySelectorAll(".month-btn").forEach(b => b.classList.remove("active")); btnElement.classList.add("active"); }
+            document.getElementById("rpMonthTitle").innerText = `عن شهر: ${monthNameText}`;
+            const tbody = document.getElementById("rpTableBody"); if(!tbody) return; tbody.innerHTML = '';
+            
+            let monthGrades = window.currentOpenedStudentData.grades.filter(g => {
+                if(g.iso_date && g.iso_date.startsWith(monthKey)) return true;
+                if(g.date && g.date.includes(monthKey)) return true; 
+                return false;
+            });
+            
+            if (monthGrades.length === 0) { tbody.innerHTML = `<tr><td colspan="4" style="padding:15px; color:gray; font-weight:bold;">لا يوجد سجل للطالب في هذا الشهر</td></tr>`; return; }
+
+            monthGrades.forEach(g => {
+                let statusText = "", gradeText = "-";
+                if(g.status === 'absent') { statusText = "غائب"; } else if(g.status === 'skipped') { statusText = "لم يختبر"; } else { statusText = "حضر"; gradeText = `${g.grade} / ${g.max}`; }
+                tbody.innerHTML += `<tr><td style="direction:rtl;">${g.date}</td><td>${g.type}</td><td style="color:${g.status==='absent'?'red':(g.status==='skipped'?'orange':'green')};">${statusText}</td><td style="direction:ltr;">${gradeText}</td></tr>`;
+            });
+        }
+        window.closeSecretModal = function() { document.getElementById("secretRecordModal").classList.remove("show"); }
+
+        window.downloadSecretRecordAsImage = function() {
+            let node = document.getElementById('reportPaperContent');
+            html2canvas(node, { scale: 2, backgroundColor: "#ffffff" }).then(canvas => {
+                let link = document.createElement('a'); link.download = `سجل_${window.currentOpenedStudentData.student_name}.png`; link.href = canvas.toDataURL('image/png'); link.click();
+            });
+        }
+
+        window.printSecretRecord = function() {
+            let tName = "منظومة الإدارة السحابية";
+            let tPhoto = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+            const currentCenterId = sessionStorage.getItem("activeCenterId");
+            const cachedAuth = localStorage.getItem('classy_auth_' + currentCenterId);
+            if(cachedAuth) {
+                const data = JSON.parse(cachedAuth);
+                if(data.teacher_name) tName = data.teacher_name;
+                if(data.teacher_photo) tPhoto = data.teacher_photo;
+            }
+
+            let content = document.getElementById('reportPaperContent').innerHTML;
+
+            // التأكد من عدم وجود أي عنصر طباعة مؤقت قديم وحذفه
+            let oldPrint = document.getElementById('tempMobilePrint');
+            if (oldPrint) oldPrint.remove();
+
+            // إنشاء قسم الطباعة بداخل الصفحة الحالية لتفادي مشاكل النوافذ المنبثقة
+            let printDiv = document.createElement('div');
+            printDiv.id = 'tempMobilePrint';
+            
+            printDiv.innerHTML = `
+                <style>
+                    /* إخفاء هذا القسم تماماً أثناء الاستخدام العادي */
+                    @media screen {
+                        #tempMobilePrint { display: none !important; }
+                    }
+                    /* تجهيز الشاشة للطباعة فقط */
+                    @media print {
+                        /* إخفاء كل عناصر الصفحة الأصلية */
+                        body > * { display: none !important; }
+                        /* إظهار قسم الطباعة الخاص بنا فقط */
+                        body > #tempMobilePrint { display: block !important; position: absolute; left: 0; top: 0; width: 100%; background: #fff; padding: 20px; z-index: 999999; }
+                        
+                        /* إجبار الصفحة تكون بالطول (Portrait) */
+                        @page { size: A4 portrait !important; margin: 10mm !important; }
+                        
+                        .print-mobile-header { display: flex; align-items: center; border-bottom: 3px solid #3b82f6; padding-bottom: 15px; margin-bottom: 20px; }
+                        .print-mobile-header img { width: 70px; height: 70px; border-radius: 50%; border: 2px solid #3b82f6; object-fit: cover; margin-left: 15px; }
+                        .print-mobile-header h2 { margin: 0; font-size: 20px; font-weight: 900; color: #1e293b; }
+                        .print-mobile-header p { margin: 5px 0 0 0; font-size: 14px; color: #475569; font-weight: bold; }
+                        
+                        table { width: 100%; border-collapse: collapse; text-align: center; margin-top:20px; font-size: 14px; color: #000; }
+                        th, td { border: 1px solid #000; padding: 10px; color: #000; }
+                        th { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    }
+                </style>
+                <div class="print-mobile-header">
+                    <img src="${tPhoto}" alt="Logo">
+                    <div>
+                        <h2>${tName}</h2>
+                        <p>السجل السري لدرجات وتقييم الطالب</p>
+                    </div>
+                </div>
+                ${content}
+            `;
+            
+            document.body.appendChild(printDiv);
+
+            // ننتظر جزء بسيط جداً من الثانية لتأكيد ترتيب العناصر ثم نستدعي الطباعة
+            setTimeout(() => {
+                window.print();
+                
+                // تنظيف العنصر المؤقت بعد إغلاق شاشة الطباعة
+                setTimeout(() => {
+                    let elem = document.getElementById('tempMobilePrint');
+                    if (elem) elem.remove();
+                }, 1000);
+            }, 300);
+        }
+
+
+        window.sendSecretRecordWhatsApp = function() {
+            let stu = window.currentOpenedStudentData; let phone = stu.parent_phone || stu.phone || "";
+            if(!phone || phone.trim() === "") { Swal.fire({ icon: 'error', title: 'تنبيه هام', text: 'قم بتسجيل رقم الطالب أولاً!', confirmButtonText: 'حسناً', confirmButtonColor: '#ef4444' }); return; }
+            let monthTitle = document.getElementById("rpMonthTitle").innerText;
+            let msg = `📄 تقرير درجات الطالب/ة: ${stu.student_name}\n${monthTitle}\n\n`;
+            let rows = document.getElementById("rpTableBody").querySelectorAll("tr");
+            if(rows.length > 0 && !rows[0].innerText.includes('لا يوجد')) {
+                rows.forEach(row => { let cols = row.querySelectorAll("td"); if(cols.length === 4) { msg += `🗓 ${cols[0].innerText} | ${cols[1].innerText} | ${cols[2].innerText} | الدرجة: ${cols[3].innerText}\n`; } });
+            } else { msg += "لا توجد درجات مسجلة.\n"; }
+            window.open(`https://wa.me/2${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        // ================= لوحة الشرف وفلتر البحث =================
+        window.openHonorBoard = function() {
+            let todayDate = getTodayFormatted();
+            Swal.fire({
+                title: '🏆 لوحة شرف المتفوقين',
+                html: `
+                    <div style="text-align:right; font-family:'Cairo';">
+                        <div style="display:flex; gap:5px; margin-bottom:10px;">
+                            <input type="date" id="hbDateFilter" class="form-input" value="${todayDate}" onchange="window.renderHonorBoardList()" style="background:#1e293b; color:#fff;">
+                            <input type="text" id="hbSearchFilter" class="form-input" placeholder="بحث بالاسم..." oninput="window.renderHonorBoardList()" style="background:#1e293b; color:#fff;">
+                        </div>
+                        <div id="honorBoardResults" style="max-height:40vh; overflow-y:auto; padding:5px;"></div>
+                        <button onclick="window.openPrintOverlay()" style="width:100%; background:var(--btn-blue); color:#fff; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px; margin-top:10px;"><i class="fa-solid fa-print"></i> عرض وطباعة شهادات الكل</button>
+                    </div>
+                `,
+                showConfirmButton: false, showCloseButton: true, didOpen: () => { window.renderHonorBoardList(); }
+            });
+        }
+
+        window.renderHonorBoardList = function() {
+            const checkDate = document.getElementById('hbDateFilter').value;
+            const searchQ = document.getElementById('hbSearchFilter').value.trim().toLowerCase();
+            const container = document.getElementById('honorBoardResults'); if(!container) return;
+            
+            let validStudents = window.allStudentsData.filter(s => {
+                if(!s.grades) return false;
+                let matchName = s.student_name.toLowerCase().includes(searchQ) || s.barcode.includes(searchQ);
+                let rec = s.grades.find(g => g.iso_date === checkDate);
+                return matchName && rec && rec.status === 'tested'; 
+            });
+
+            if(validStudents.length === 0) { 
+                container.innerHTML = `<div style="text-align:center; padding:20px; color:#cbd5e1; font-weight:bold; font-size:12px;">لا يوجد طلاب مطابقين في هذا البحث.</div>`;
+                window.eliteStudentsForPrint = []; return; 
+            }
+
+            let honorList = validStudents.map(s => {
+                let g = s.grades.find(x => x.iso_date === checkDate);
+                let percent = Math.round((g.grade / g.max) * 100);
+                return { barcode: s.barcode, name: s.student_name, group: s.group_name, grade: g.grade, max: g.max, percent: percent, date: g.date };
+            });
+
+            window.eliteStudentsForPrint = honorList.filter(s => s.percent >= 90).sort((a, b) => b.percent - a.percent);
+
+            if(window.eliteStudentsForPrint.length === 0) { 
+                container.innerHTML = `<div style="text-align:center; padding:20px; color:#cbd5e1; font-weight:bold; font-size:12px;">لم يحصل أحد على 90% أو أكثر في هذا البحث.</div>`;
+                return; 
+            }
+
+            let html = '';
+            window.eliteStudentsForPrint.forEach((s, index) => {
+                let badge = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : '🏅'));
+                html += `
+                    <div style="background:#1e293b; padding:8px; border-radius:8px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #334155; cursor:pointer;" onclick="window.openExamCertificate('${s.barcode}')">
+                        <div><strong style="color:#fff; font-size:12px; font-weight:900;">${s.name}</strong><div style="font-size:9px; color:#ffffff; margin-top:2px; font-weight:bold;">${s.group || 'بدون'}</div></div>
+                        <div style="display:flex; align-items:center; gap:8px;"><span style="color:var(--btn-green); font-weight:900; font-size:12px; direction:ltr;">${s.grade} / ${s.max}</span><span style="font-size:14px;">${badge}</span></div>
+                    </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        // ================= الطباعة المجمعة والمحاذاة الذكية للشاشة =================
+        window.openPrintOverlay = function() {
+            if(!window.eliteStudentsForPrint || window.eliteStudentsForPrint.length === 0) {
+                Swal.fire({toast:true, position:'top', icon:'info', title:'لا يوجد طلاب لطباعة شهاداتهم', showConfirmButton:false, timer:2000}); 
+                return;
+            }
+            const area = document.getElementById('printPagesArea');
+            
+            let bgUrl = window.activeCertUrl || 'https://www.transparenttextures.com/patterns/old-wall.png';
+            let config = window.certLayoutConfig || {};
+            let x = config.x || 50;
+            let y = config.y || 50;
+            let baseSize = config.size || 30; 
+
+            // دالة المقياس الذكية: تجعل الـ 1122 بيكسل تنكمش لتناسب عرض الموبايل تماماً مثل الشهادة الفردية
+            let certWidthOnScreen = window.innerWidth * 0.95;
+            if(certWidthOnScreen > 800) certWidthOnScreen = 800;
+            let scaleFactor = certWidthOnScreen / 1122;
+            
+            // حساب حجم الخط الفعلي على الورقة بحيث يتطابق مع شكله على شاشة الموبايل
+            let printFontSize = baseSize * (1122 / certWidthOnScreen);
+
+            let html = `<div id="printScaleWrapper" style="transform: scale(${scaleFactor}); transform-origin: top center; display: flex; flex-direction: column; gap: 40px;">`;
+            
+            window.eliteStudentsForPrint.forEach(stu => {
+                html += `
+                    <div class="cert-page-wrapper" style="background-image: url('${bgUrl}');">
+                        <div class="cert-name-print" style="left: ${x}%; top: ${y}%; font-size: ${printFontSize}px;">${stu.name}</div>
+                    </div>
+                `;
+            });
+            
+            html += `</div>`;
+            area.innerHTML = html;
+            document.getElementById('printOverlayContainer').style.display = 'block';
+            Swal.close();
+        }
+
+        window.closePrintOverlay = function() { document.getElementById('printOverlayContainer').style.display = 'none'; }
+        
+        window.executeSystemPrint = function() { window.print(); }
+        
+        window.executePDFDownload = function() {
+            const wrapper = document.getElementById('printScaleWrapper');
+            // استعادة الحجم الحقيقي مؤقتاً لتنزيل PDF بجودة خارقة
+            wrapper.style.transform = 'scale(1)'; 
+            
+            html2pdf().from(wrapper).set({
+                margin: 0, filename: 'شهادات_المتفوقين.pdf',
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { scale: 2, useCORS: true }, 
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            }).save().then(() => {
+                // إرجاع الحجم المخصص للشاشة بعد التحميل
+                let certWidthOnScreen = window.innerWidth * 0.95;
+                if(certWidthOnScreen > 800) certWidthOnScreen = 800;
+                wrapper.style.transform = `scale(${certWidthOnScreen / 1122})`;
+            });
+        }
+
+        // ================= إدارة الشهادة الفردية =================
+        window.openExamCertificate = function(barcode) {
+            Swal.close(); const s = window.allStudentsData.find(x => x.barcode === barcode); if(!s) return;
+            window.currentCertData = s;
+            
+            document.getElementById('certDraggableName').innerText = s.student_name;
+            document.getElementById('singleCertModal').style.display = 'flex';
+
+            let nameEl = document.getElementById('certDraggableName');
+            nameEl.style.left = (window.certLayoutConfig.x || 50) + '%';
+            nameEl.style.top = (window.certLayoutConfig.y || 50) + '%';
+            nameEl.style.fontSize = (window.certLayoutConfig.size || 30) + 'px';
+            document.getElementById('fontSizeSlider').value = window.certLayoutConfig.size || 30;
+
+            if (window.activeCertUrl) { document.getElementById('certCaptureArea').style.backgroundImage = `url('${window.activeCertUrl}')`; }
+        }
+
+        window.closeExamCertificate = function() { document.getElementById('singleCertModal').style.display = 'none'; }
+        window.updateCertFontSize = function(val) { document.getElementById('certDraggableName').style.fontSize = val + 'px'; }
+
+        window.saveCertLayout = function() {
+            let nameEl = document.getElementById('certDraggableName');
+            let x = parseFloat(nameEl.style.left) || 50; let y = parseFloat(nameEl.style.top) || 50; let size = parseFloat(nameEl.style.fontSize) || 30;
+            window.certLayoutConfig = { x, y, size };
+            updateDoc(doc(db, "centers_auth", currentCenterId), { cert_name_config: window.certLayoutConfig })
+            .then(() => Swal.fire({toast:true, position:'top', icon:'success', title:'تم حفظ الأبعاد سحابياً بنجاح', timer:1500, showConfirmButton:false}));
+        }
+
+        window.downloadCertImage = function() {
+            let node = document.getElementById('certCaptureArea');
+            html2canvas(node, { scale: 2, useCORS: true, backgroundColor: null }).then(canvas => {
+                let link = document.createElement('a'); link.download = `شهادة_${window.currentCertData.student_name}.png`;
+                link.href = canvas.toDataURL('image/png'); link.click();
+            });
+        }
+
+        window.sendCertWhatsApp = function() {
+            let stu = window.currentCertData; let phone = stu.parent_phone || stu.phone || "";
+            if(!phone) { Swal.fire('خطأ', 'لا يوجد رقم مسجل لهذا الطالب', 'error'); return; }
+            let msg = encodeURIComponent(`🏆 نبارك للطالب/ة المتميز/ة: ${stu.student_name} التفوق والتميز الباهر! ✨`);
+            window.open(`https://wa.me/2${phone}?text=${msg}`, '_blank');
+        }
+
+        // تفعيل السحب اللمسي الحر الذكي
+        setTimeout(() => {
+            const dragName = document.getElementById('certDraggableName');
+            const certContainer = document.getElementById('certCaptureArea');
+            if(dragName && certContainer) {
+                let isDragging = false; let startX, startY, initialX, initialY;
+                const startDrag = (e) => {
+                    isDragging = true;
+                    let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    startX = clientX; startY = clientY;
+                    initialX = parseFloat(dragName.style.left) || 50; initialY = parseFloat(dragName.style.top) || 50;
+                    if(e.cancelable) e.preventDefault();
+                };
+                const doDrag = (e) => {
+                    if (!isDragging) return;
+                    let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    let dx = clientX - startX; let dy = clientY - startY;
+                    let rect = certContainer.getBoundingClientRect();
+                    let percentX = initialX + (dx / rect.width) * 100;
+                    let percentY = initialY + (dy / rect.height) * 100;
+                    if(percentX >= 0 && percentX <= 100) dragName.style.left = percentX + '%'; 
+                    if(percentY >= 0 && percentY <= 100) dragName.style.top = percentY + '%';
+                };
+                const stopDrag = () => { isDragging = false; };
+                dragName.addEventListener('mousedown', startDrag); dragName.addEventListener('touchstart', startDrag, {passive: false});
+                document.addEventListener('mousemove', doDrag); document.addEventListener('touchmove', doDrag, {passive: false});
+                document.addEventListener('mouseup', stopDrag); document.addEventListener('touchend', stopDrag);
+            }
+        }, 1000);
+
+    </script>
+</body>
+</html>
